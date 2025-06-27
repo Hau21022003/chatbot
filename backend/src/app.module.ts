@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ChatModule } from 'src/modules/chat/chat.module';
+import { IsExistConstraint } from 'src/common/validators/is-exist-constraint.validator';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChatModule } from 'src/modules/chat/chat.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    IsExistConstraint,
   ],
 })
 export class AppModule {}

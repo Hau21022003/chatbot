@@ -5,7 +5,7 @@ export type EntityErrorPayload = {
   message: string
   errors: {
     field: string
-    message: string
+    messages: string[]
   }[]
 }
 
@@ -62,7 +62,7 @@ export const handleErrorApi = <T extends FieldValues>({
     error.payload.errors.forEach((item) => {
       setError(item.field as Path<T>, {
         type: 'server',
-        message: item.message
+        message: item.messages[0]
       })
     })
   } else if (error instanceof HttpError) {
@@ -70,7 +70,7 @@ export const handleErrorApi = <T extends FieldValues>({
       description: error.payload.message,
       duration: duration ?? 5000
     })
-  } else if ('message' in error) {
+  } else if (error && 'message' in error) {
     toast.error('Lỗi', {
       description: error.message,
       duration: duration ?? 5000

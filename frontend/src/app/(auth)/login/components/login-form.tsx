@@ -46,7 +46,7 @@ export function LoginForm() {
         expiresAt: result.payload.data.accessTokenExpiresAt,
         role: result.payload.data.account.role,
       });
-      toast("Info", {
+      toast.success("Success", {
         description: result.payload.message,
       });
       setUser(result.payload.data.account);

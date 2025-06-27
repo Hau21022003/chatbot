@@ -58,7 +58,7 @@ function CodeBlock({
 
 export default function ResponseMessage({ message }: { message: string }) {
   const message_elements: React.JSX.Element[] = [];
-  const parts = message?.split("```");
+  const parts = message?.split("```"); 
   parts?.forEach((part, index) => {
     // Đây là phần code block
     if (index % 2 === 1) {

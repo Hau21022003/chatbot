@@ -35,7 +35,7 @@ export default function MainChat() {
               "https://images.pexels.com/photos/36762/scarlet-honeyeater-bird-red-feathers.jpg",
             ]}
           />
-          <ResponseMessage message={test_message} />
+          {/* <ResponseMessage message={test_message} /> */}
         </div>
       </div>
 
