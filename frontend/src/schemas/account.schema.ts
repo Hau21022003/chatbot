@@ -7,6 +7,7 @@ export const AccountRes = z
       name: z.string(),
       email: z.string(),
       role: z.enum(["admin", "user"]),
+      userType: z.enum(["free", "enterprise"])
     }),
     message: z.string()
   })

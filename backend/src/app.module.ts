@@ -8,9 +8,13 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ChatModule } from 'src/modules/chat/chat.module';
 import { IsExistConstraint } from 'src/common/validators/is-exist-constraint.validator';
+import { DownloadModule } from 'src/modules/download/download.module';
+import { UsageModule } from 'src/modules/usage/usage.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       envFilePath: '.development.env',
       isGlobal: true,
@@ -21,12 +25,11 @@ import { IsExistConstraint } from 'src/common/validators/is-exist-constraint.val
       useFactory: dbOptions,
       inject: [ConfigService],
     }),
-
     UsersModule,
-
     AuthModule,
-
     ChatModule,
+    DownloadModule,
+    UsageModule,
   ],
   providers: [
     {

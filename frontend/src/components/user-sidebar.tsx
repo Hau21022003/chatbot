@@ -29,7 +29,7 @@ const SidebarItem = ({
 }) => {
   return (
     <Link
-      href={active ? "#" : url}
+      href={url}
       className={`flex items-center justify-between py-2 px-3 rounded-lg transition cursor-pointer
         ${
           active
@@ -90,7 +90,7 @@ const UserSidebar = () => {
             icon={<MessageSquare />}
             label="AI Chat"
             url="/chat"
-            active={pathname === "/chat"}
+            active={pathname.includes("/chat")}
             isCollapsed={isCollapsed}
           />
           <SidebarItem

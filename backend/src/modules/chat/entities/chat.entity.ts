@@ -9,6 +9,17 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+export enum SenderType {
+  USER = 'user',
+  BOT = 'bot',
+}
+
+export enum ReactionType {
+  LIKE = 'like',
+  DISLIKE = 'dislike',
+  NONE = 'none',
+}
+
 @Entity('chats')
 export class Chat extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -17,20 +28,32 @@ export class Chat extends BaseEntity {
   @Column()
   message: string;
 
-  @Column()
-  sender: 'user' | 'bot';
+  @Column({
+    type: 'enum',
+    enum: SenderType,
+  })
+  sender: SenderType;
+
+  @Column({
+    type: 'enum',
+    enum: ReactionType,
+    default: ReactionType.NONE,
+  })
+  reaction: ReactionType;
 
   @Column()
   sessionId: string;
 
-  @ManyToOne(() => ChatSession, (session) => session.chats)
+  @ManyToOne(() => ChatSession, (session) => session.chats, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'sessionId' })
   session: ChatSession;
 
   @Column({ nullable: true })
   userId?: string;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user?: User;
 

@@ -61,10 +61,9 @@ export class ClaudeService {
         content:
           message.content[0].type === 'text' ? message.content[0].text : '',
         usage: {
-          input_tokens: message.usage.input_tokens,
-          output_tokens: message.usage.output_tokens,
-          total_tokens:
-            message.usage.input_tokens + message.usage.output_tokens,
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+          totalTokens: message.usage.input_tokens + message.usage.output_tokens,
         },
         model: message.model,
         created_at: new Date(),

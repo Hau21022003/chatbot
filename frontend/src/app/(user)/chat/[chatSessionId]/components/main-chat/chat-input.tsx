@@ -1,9 +1,15 @@
 "use client";
+import chatApiRequest from "@/api-requests/chat";
+import { useMainChatContext } from "@/app/(user)/chat/[chatSessionId]/components/main-chat";
+import { useChatContext } from "@/app/(user)/chat/[chatSessionId]/page";
+import { handleErrorApi } from "@/lib/error";
+import { SenderType } from "@/schemas/chat.schema";
 /* eslint-disable @next/next/no-img-element */
 import {
   Check,
   Globe,
   Lightbulb,
+  Loader2,
   Mic,
   Paperclip,
   Send,
@@ -11,10 +17,11 @@ import {
   X,
 } from "lucide-react";
 import React, { useRef, useState } from "react";
+import { toast } from "sonner";
 
 const chat_tabs = [
   {
-    type: "GEN_WEB_CODE",
+    type: "GEN_CODE_WEB",
     label: "Web code",
     icon: <Globe className="w-5 h-5" />,
   },
@@ -27,6 +34,8 @@ const chat_tabs = [
 type ChatTab = (typeof chat_tabs)[number];
 
 export default function ChatInput() {
+  const { chatSessionId, setChatSessionId } = useChatContext();
+  const { setChatList, setIsSending, isSending } = useMainChatContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<File[]>([]);
@@ -39,7 +48,7 @@ export default function ChatInput() {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`; // tối đa khoảng 5 dòng
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
     }
   };
 
@@ -50,7 +59,66 @@ export default function ChatInput() {
       const imageFiles = fileArray.filter((file) =>
         file.type.startsWith("image/")
       );
-      setImages((prev) => [...prev, ...imageFiles]);
+      const imagesLength = imageFiles.length + images.length;
+      if (imagesLength > 3) {
+        toast.error("Lỗi", {
+          duration: 3000,
+          description: "You can only select up to 3 images",
+        });
+      } else {
+        setImages((prev) => [...prev, ...imageFiles]);
+      }
+    }
+  };
+
+  const postMessage = async () => {
+    if (isSending) return;
+    setIsSending(true);
+    try {
+      if (choseToolTab?.type == "GEN_CODE_WEB" && images.length === 0)
+        throw Error("Please select a website image");
+
+      const content = textareaRef.current?.value.trim() ?? "";
+      if (content === "") throw Error("Message cannot be empty");
+
+      let currentSessionId = chatSessionId;
+      if (!chatSessionId) {
+        const chatSessionResult = await chatApiRequest.createChatSession({
+          sessionName: "Chat",
+        });
+        currentSessionId = chatSessionResult.payload.data.id;
+        setChatSessionId(currentSessionId);
+      }
+
+      const tempMessage = {
+        id: "sampleId",
+        message: content,
+        sender: SenderType.USER,
+        createdAt: Date.now().toString(),
+        updatedAt: Date.now().toString(),
+        metadata: { images: images },
+      };
+      setChatList((prev) => [...prev, tempMessage]);
+      if (textareaRef.current) textareaRef.current.value = "";
+      setImages([]);
+
+      const formData = new FormData();
+      formData.append("message", content);
+      formData.append("chatSessionId", currentSessionId ?? "");
+      if (choseToolTab?.type == "GEN_CODE_WEB") {
+        formData.append("type", choseToolTab.type);
+      }
+      images.forEach((img) => {
+        formData.append("images", img);
+      });
+      const result = await chatApiRequest.sendMessage(formData);
+      const realMessages = result.payload.data;
+      setChatList((prev) => [...prev.slice(0, -1), ...realMessages]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -82,7 +150,7 @@ export default function ChatInput() {
         ref={textareaRef}
         onInput={handleInput}
         className="w-full resize-none overflow-auto max-h-[160px] min-h-[40px] focus:outline-none leading-5"
-        rows={2}
+        rows={1}
         placeholder="How can I help you today?"
       />
       <div className="flex justify-between items-center gap-2">
@@ -92,7 +160,7 @@ export default function ChatInput() {
             title="Upload a file"
             className="rounded-lg bg-gray-100 p-3 hover:bg-gray-200 transition-colors"
           >
-            <Paperclip className="w-5 h-5 text-gray-500" />
+            <Paperclip className="w-5 h-5 text-gray-700" />
           </button>
           <input
             type="file"
@@ -109,7 +177,7 @@ export default function ChatInput() {
               title="Tools"
               className="rounded-lg bg-gray-100 p-3 hover:bg-gray-200 transition-colors"
             >
-              <Settings2 className="w-5 h-5 text-gray-500" />
+              <Settings2 className="w-5 h-5 text-gray-700" />
             </button>
             {openTools && (
               <div className="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border z-50">
@@ -117,8 +185,7 @@ export default function ChatInput() {
                   <button
                     key={tab.type}
                     onClick={() => {
-                      if (tab.type != choseToolTab?.type)
-                        setChoseToolTab(tab);
+                      if (tab.type != choseToolTab?.type) setChoseToolTab(tab);
                       else setChoseToolTab(null);
                       setOpenTools(false);
                     }}
@@ -150,7 +217,12 @@ export default function ChatInput() {
                 {choseToolTab?.icon}
                 <span>{choseToolTab.label}</span>
               </div>
-              <X className="w-5 h-5 cursor-pointer" onClick={() => {setChoseToolTab(null)}}/>
+              <X
+                className="w-5 h-5 cursor-pointer"
+                onClick={() => {
+                  setChoseToolTab(null);
+                }}
+              />
             </div>
           )}
         </div>
@@ -159,10 +231,17 @@ export default function ChatInput() {
             title="Voice input"
             className="rounded-lg bg-gray-100 p-3 hover:bg-gray-200 transition-colors"
           >
-            <Mic className="w-5 h-5 text-gray-500" />
+            <Mic className="w-5 h-5 text-gray-700" />
           </button>
-          <button className="rounded-lg bg-orange-500 p-3 hover:bg-orange-600 transition-colors">
-            <Send className="w-5 h-5 text-white" />
+          <button
+            onClick={postMessage}
+            className="rounded-lg bg-orange-500 p-3 hover:bg-orange-600 transition-colors"
+          >
+            {isSending ? (
+              <Loader2 className="h-5 w-5 text-white animate-spin" />
+            ) : (
+              <Send className="w-5 h-5 text-white" />
+            )}
           </button>
         </div>
       </div>

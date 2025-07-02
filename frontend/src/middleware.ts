@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const privatePaths = ["/me"];
+const privatePaths = ["/chat", "statistics"];
 const adminPaths = ["/admin"];
 const authPaths = ["/login", "/signup"];
 
@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
 
   // Nếu đã login mà vào login/signup -> redirect về /me
   if (isAuthPage && token) {
-    return NextResponse.redirect(new URL("/me", request.url));
+    return NextResponse.redirect(new URL("/chat", request.url));
   }
 
   // Nếu không phải admin mà vào /admin -> redirect về 403

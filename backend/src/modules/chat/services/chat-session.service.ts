@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { createPaginationMeta } from 'src/common/interfaces/pagination-result.interface';
-import { RemoveSessionsDto } from 'src/modules/chat/dto/chat-session.dto';
+import { CreateChatSessionDto } from 'src/modules/chat/dto/chat-session.dto';
 import { ChatSession } from 'src/modules/chat/entities/chat-session.entity';
 import { In, Repository } from 'typeorm';
 
@@ -13,9 +13,9 @@ export class ChatSessionService {
     private chatSessionRepository: Repository<ChatSession>,
   ) {}
 
-  async create(sessionName: string, userId: string) {
+  async create(createChatSession: CreateChatSessionDto, userId: string) {
     const chatSession = this.chatSessionRepository.create({
-      sessionName: sessionName,
+      sessionName: createChatSession.sessionName,
       lastActivity: new Date(),
       userId: userId,
     });
@@ -31,7 +31,7 @@ export class ChatSessionService {
       skip: offset,
       take: pageSize,
       order: {
-        lastActivity: 'ASC',
+        lastActivity: 'DESC',
       },
     });
     return {
@@ -57,7 +57,9 @@ export class ChatSessionService {
       where: { id: In(ids) },
     });
     if (count != ids.length) {
-      throw new BadRequestException('Some session IDs do not exist or are invalid')
+      throw new BadRequestException(
+        'Some session IDs do not exist or are invalid',
+      );
     }
     return await this.chatSessionRepository.delete({ id: In(ids) });
   }

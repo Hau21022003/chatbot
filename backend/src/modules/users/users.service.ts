@@ -25,20 +25,20 @@ export class UsersService {
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.usersRepository.find();
   }
 
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
 
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
-
   async update(id: string, updateData: Partial<User>) {
     await this.usersRepository.update(id, updateData);
     return this.usersRepository.findOneOrFail({ where: { id } });
+  }
+
+  async updateMany(users: User[]) {
+    await this.usersRepository.save(users);
   }
 
   remove(id: string) {

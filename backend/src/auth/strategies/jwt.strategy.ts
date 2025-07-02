@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-type JwtPayload = {
+export type JwtPayload = {
   sub: string;
   email: string;
 };

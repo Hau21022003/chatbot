@@ -3,23 +3,23 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseInterceptors,
   UploadedFiles,
   ValidationPipe,
+  Put,
 } from '@nestjs/common';
 import { ChatService } from './services/chat.service';
-import { CreateChatDto } from './dto/create-chat.dto';
-import { UpdateChatDto } from './dto/update-chat.dto';
+import { CreateChatDto, FindChatDto, UpdateReactionDto } from './dto/chat.dto';
 import { ChatSessionService } from 'src/modules/chat/services/chat-session.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage, File } from 'multer';
 import { extname } from 'path';
 import {
-  RemoveSessionsDto,
+  CreateChatSessionDto,
+  RenameChatSessionDto,
   SessionIdDto,
 } from 'src/modules/chat/dto/chat-session.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -49,16 +49,34 @@ export class ChatController {
     @GetUser('sub') userId,
     @UploadedFiles() files: { images?: File[] },
   ) {
-    if (!createChatDto.chatSessionId) {
-      const newSession = await this.sessionService.create('Chat', userId);
-      createChatDto.chatSessionId = newSession.id;
-    }
+    await this.sessionService.updateLastActivity(createChatDto.chatSessionId);
     return this.chatService.create(createChatDto, userId, files?.images);
   }
 
+  @Post('message/find-all')
+  findAll(@GetUser('sub') userId: string, @Body() dto: FindChatDto) {
+    return this.chatService.findAll(userId, dto);
+  }
+
   @Get('message/:id')
-  findChatsBySession(@Param(ValidationPipe) sessionIdDto: SessionIdDto) {
-    return this.chatService.findBySession(sessionIdDto);
+  findChatsBySession(
+    @Param(ValidationPipe) sessionIdDto: SessionIdDto,
+    @GetUser('sub') userId,
+  ) {
+    return this.chatService.findBySession(sessionIdDto, userId);
+  }
+
+  @Put('message/react/:id')
+  reactMessage(@Param('id') id: string, @Body() dto: UpdateReactionDto) {
+    return this.chatService.reactMessage(id, dto);
+  }
+
+  @Post('session')
+  createChatSession(
+    @Body() createChatSession: CreateChatSessionDto,
+    @GetUser('sub') userId,
+  ) {
+    return this.sessionService.create(createChatSession, userId);
   }
 
   @Post('session/find-all')
@@ -75,23 +93,11 @@ export class ChatController {
     return this.sessionService.remove(ids);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.chatService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.chatService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateChatDto: UpdateChatDto) {
-  //   return this.chatService.update(+id, updateChatDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.chatService.remove(+id);
-  // }
+  @Put('session/rename/:id')
+  renameChatSession(
+    @Param('id') id: string,
+    @Body() dto: RenameChatSessionDto,
+  ) {
+    return this.sessionService.rename(id, dto.sessionName);
+  }
 }

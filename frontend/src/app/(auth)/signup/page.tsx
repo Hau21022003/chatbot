@@ -1,5 +1,5 @@
 import { SignUpForm } from "@/app/(auth)/signup/components/signup-form";
-import TestimonialCard from "@/components/shared/testimonial-card";
+import TestimonialCard from "@/components/auth-testimonial-card";
 import Image from "next/image";
 
 export default function SignUpPage() {
