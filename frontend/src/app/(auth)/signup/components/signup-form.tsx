@@ -19,24 +19,11 @@ import { RegisterBody, RegisterBodyType } from "@/schemas/auth.schema";
 import { useAppContext } from "@/app/app-provider";
 import { useRouter } from "next/navigation";
 import authApiRequest from "@/api-requests/auth";
-import { toast } from "sonner";
 import { handleErrorApi } from "@/lib/error";
 
 export function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // const form = useForm({
-  //   resolver: zodResolver(RegisterBody),
-  //   defaultValues: {
-  //     email: "",
-  //     password: "",
-  //     confirmPassword: "",
-  //   },
-  // });
-
-  // const onSubmit = (values: RegisterBodyType) => {
-  //   console.log(values);
-  // };
 
   const [loading, setLoading] = useState(false)
   const { setUser } = useAppContext()
@@ -62,9 +49,6 @@ export function SignUpForm() {
         sessionToken: result.payload.data.accessToken,
         expiresAt: result.payload.data.accessTokenExpiresAt,
         role: result.payload.data.account.role
-      })
-      toast('Info', {
-        description: result.payload.message
       })
       setUser(result.payload.data.account)
 

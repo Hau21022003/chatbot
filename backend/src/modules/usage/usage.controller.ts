@@ -15,7 +15,7 @@ import { GetUser } from 'src/common/decorators/get-user.decorator';
 export class UsageController {
   constructor(private readonly usageService: UsageService) {}
 
-  @Get('statistic')
+  @Post('statistic')
   statistic(@Body() dto: StatisticDto, @GetUser('sub') userId: string) {
     return this.usageService.statistic(userId, dto);
   }

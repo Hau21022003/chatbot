@@ -6,6 +6,7 @@ import { UserType } from 'src/modules/users/entities/user.entity';
 import { UsersService } from 'src/modules/users/users.service';
 import { Cron } from '@nestjs/schedule';
 import { StatisticDto } from 'src/modules/usage/dto/statistic.dto';
+import { config } from 'process';
 
 @Injectable()
 export class UsageService {
@@ -32,14 +33,17 @@ export class UsageService {
   async statistic(userId: string, dto: StatisticDto) {
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - dto.dateRange);
-    const { remainingPoints } = await this.userService.findById(userId);
+    const { remainingPoints, userType } =
+      await this.userService.findById(userId);
     const userUsages = await this.userUsageRepository.find({
       where: {
         userId: userId,
         date: Between(fromDate, new Date()),
       },
     });
+    const dailyPoints = this.POINTS_CONFIG[userType].dailyLimit;
     return {
+      dailyPoints,
       remainingPoints,
       userUsages,
     };

@@ -3,7 +3,7 @@ import chatApiRequest from "@/api-requests/chat";
 import { useMainChatContext } from "@/app/(user)/chat/[chatSessionId]/components/main-chat";
 import { useChatContext } from "@/app/(user)/chat/[chatSessionId]/page";
 import { handleErrorApi } from "@/lib/error";
-import { SenderType } from "@/schemas/chat.schema";
+import { ReactionType, SenderType } from "@/schemas/chat.schema";
 /* eslint-disable @next/next/no-img-element */
 import {
   Check,
@@ -96,6 +96,7 @@ export default function ChatInput() {
         sender: SenderType.USER,
         createdAt: Date.now().toString(),
         updatedAt: Date.now().toString(),
+        reaction: ReactionType.NONE,
         metadata: { images: images },
       };
       setChatList((prev) => [...prev, tempMessage]);

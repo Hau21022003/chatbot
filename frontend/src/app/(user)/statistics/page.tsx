@@ -1,4 +1,5 @@
 "use client";
+import { statisticApiRequest } from "@/api-requests/statistic";
 import { MessagesTable } from "@/app/(user)/statistics/components/messages-table";
 // import MessagesTable from "@/app/(user)/statistics/components/messages-table";
 import PointsChart from "@/app/(user)/statistics/components/points-chart";
@@ -12,13 +13,49 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import UserHeader from "@/components/user-header";
+import { handleErrorApi } from "@/lib/error";
+import { StatisticResType } from "@/schemas/statistic.schema";
 import { Star, Upload } from "lucide-react";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } ;
-import React, { useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+export const StatisticContext = createContext<{
+  statisticData: StatisticResType["data"] | undefined;
+  setStatisticData: React.Dispatch<
+    React.SetStateAction<StatisticResType["data"] | undefined>
+  >;
+}>({ statisticData: undefined, setStatisticData: () => {} });
+export const useStatisticContext = () => useContext(StatisticContext);
 
 export default function StatisticsPage() {
   const { user } = useAppContext();
   const [selectedValue, setSelectedValue] = useState("week");
+  const [statisticData, setStatisticData] = useState<
+    StatisticResType["data"] | undefined
+  >(undefined);
+  const [dateRange, setDateRange] = useState<7 | 30>(7);
+  const loadStatisticData = async () => {
+    try {
+      const result = await statisticApiRequest.statistic({
+        dateRange: dateRange,
+      });
+      setStatisticData(result.payload.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      handleErrorApi(err);
+    }
+  };
+  useEffect(() => {
+    loadStatisticData();
+  }, [dateRange]);
+
+  useEffect(() => {
+    let newRange: 7 | 30 = 7;
+    if (selectedValue == "month") {
+      newRange = 30;
+    }
+    setDateRange(newRange);
+  }, [selectedValue]);
 
   return (
     <div className="flex flex-col h-full">
@@ -45,18 +82,21 @@ export default function StatisticsPage() {
             </button>
           </div>
         </div>
-        <div className="flex items-stretch gap-4">
-          <div className=" rounded-2xl bg-white p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Star className="w-6 h-6 text-orange-500" />
-              <p className="leading-none font-medium text-gray-600">Points</p>
+
+        <StatisticContext.Provider value={{ statisticData, setStatisticData }}>
+          <div className="flex items-stretch gap-4">
+            <div className=" rounded-2xl bg-white p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Star className="w-6 h-6 text-orange-500" />
+                <p className="leading-none font-medium text-gray-600">Points</p>
+              </div>
+              <PointsChart />
             </div>
-            <PointsChart />
+            <div className="flex-1">
+              <UsedPointsChart />
+            </div>
           </div>
-          <div className="flex-1">
-            <UsedPointsChart />
-          </div>
-        </div>
+        </StatisticContext.Provider>
         <div className="rounded-2xl bg-white p-5 max-w-full">
           <MessagesTable />
         </div>

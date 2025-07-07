@@ -28,6 +28,7 @@ export const RegisterRes = z.object({
       name: z.string(),
       email: z.string(),
       role: z.enum(["admin", "user"]),
+      userType: z.enum(["free", "enterprise"]),
     }),
   }),
   message: z.string(),

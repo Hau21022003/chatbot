@@ -103,8 +103,8 @@ const UserSidebar = () => {
           <SidebarItem
             icon={<Settings />}
             label="Settings"
-            url="/settings"
-            active={pathname === "/settings"}
+            url="/settings/profile"
+            active={pathname.includes("/settings")}
             isCollapsed={isCollapsed}
           />
           <SidebarItem
@@ -125,12 +125,12 @@ const UserSidebar = () => {
             </p>
             <div className="flex items-center justify-between">
               <span>$10 / mo</span>
-              <a
-                href="#"
+              <Link
+                href="/settings/pricing"
                 className="bg-white text-black text-sm font-bold px-4 py-2 rounded-2xl"
               >
                 Get
-              </a>
+              </Link>
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import {
   RadialBarChart,
 } from "recharts";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { useStatisticContext } from "@/app/(user)/statistics/page";
 const chartData = [
   { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
 ];
@@ -23,6 +24,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function PointsChart() {
+  const { statisticData } = useStatisticContext();
+  function getProgressAngle(current: number, total: number) {
+    if (total === 0) return 0;
+    const progress = current / total;
+    return progress * 360;
+  }
+
   return (
     <ChartContainer
       config={chartConfig}
@@ -31,9 +39,10 @@ export default function PointsChart() {
       <RadialBarChart
         data={chartData}
         startAngle={0}
-        endAngle={300}
-        // innerRadius={80}
-        // outerRadius={110}
+        endAngle={getProgressAngle(
+          statisticData?.remainingPoints || 0,
+          statisticData?.dailyPoints || 0
+        )}
         innerRadius={150}
         outerRadius={190}
       >
@@ -42,8 +51,6 @@ export default function PointsChart() {
           radialLines={false}
           stroke="none"
           className="first:fill-muted last:fill-background"
-          // polarRadius={[86, 74]}
-          // polarRadius={[86, 74]}
           polarRadius={[156, 142]}
         />
         <RadialBar dataKey="visitors" background cornerRadius={10} />
@@ -63,7 +70,7 @@ export default function PointsChart() {
                       y={viewBox.cy}
                       className="fill-foreground text-7xl font-bold"
                     >
-                      {chartData[0].visitors.toLocaleString()}
+                      {Math.round(Number(statisticData?.remainingPoints))}
                     </tspan>
                     <tspan
                       x={viewBox.cx}

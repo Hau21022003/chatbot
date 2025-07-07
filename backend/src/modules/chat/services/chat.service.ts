@@ -91,7 +91,7 @@ export class ChatService {
     const chats = await this.chatRepository.find({
       where: { userId: userId },
       order: {
-        createdAt: 'ASC',
+        createdAt: 'DESC',
         sender: 'ASC',
       },
       relations: ['session'],
@@ -101,15 +101,16 @@ export class ChatService {
     for (let i = 0; i < chats.length; i++) {
       const current = chats[i];
       const next = chats[i + 1];
-      const { id, createdAt, session } = current;
+      const { createdAt, session } = current;
 
       if (current.sender === 'user' && next?.sender === 'bot') {
         result.push({
           input: current.message,
           output: next.message,
           createdAt,
-          id,
+          ids: [current.id, next.id],
           sessionName: session.sessionName,
+          sessionId: session.id,
         });
         i++;
       }

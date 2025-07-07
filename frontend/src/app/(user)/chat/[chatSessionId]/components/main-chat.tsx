@@ -8,6 +8,7 @@ import { useChatContext } from "@/app/(user)/chat/[chatSessionId]/page";
 import { handleErrorApi } from "@/lib/error";
 import { ChatResType, SenderType } from "@/schemas/chat.schema";
 import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import React, {
   createContext,
   useContext,
@@ -35,6 +36,10 @@ export default function MainChat() {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [chatList, setChatList] = useState<ChatResType["data"]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const messageId = searchParams.get("messageId");
+  const hasScrolledToMessage = useRef(false);
 
   const loadChats = async () => {
     try {
@@ -53,11 +58,21 @@ export default function MainChat() {
   }, []);
 
   useEffect(() => {
+    if (!hasScrolledToMessage.current && messageId && chatList.length > 0) {
+      const el = messageRefs.current[messageId];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        hasScrolledToMessage.current = true;
+      }
+    }
+  }, [chatList, messageId]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [isSending]);
 
   useEffect(() => {
-    if (chatList.length > 0) {
+    if (chatList.length > 0 && !messageId) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
     }
   }, [chatList]);
@@ -88,24 +103,27 @@ export default function MainChat() {
         >
           <div className="max-w-3xl w-full">
             {chatList?.map((chat) => {
-              if (chat.sender == SenderType.USER) {
-                return (
-                  <ChatMessage
-                    key={chat.id}
-                    content={chat.message}
-                    images={chat.metadata?.images}
-                  />
-                );
-              } else {
-                return (
-                  <ResponseMessage
-                    key={chat.id}
-                    message={chat.message}
-                    id={chat.id}
-                    reaction={chat.reaction}
-                  />
-                );
-              }
+              return (
+                <div
+                  key={chat.id}
+                  ref={(el) => {
+                    if (el) messageRefs.current[chat.id] = el;
+                  }}
+                >
+                  {chat.sender === SenderType.USER ? (
+                    <ChatMessage
+                      content={chat.message}
+                      images={chat.metadata?.images}
+                    />
+                  ) : (
+                    <ResponseMessage
+                      message={chat.message}
+                      id={chat.id}
+                      reaction={chat.reaction}
+                    />
+                  )}
+                </div>
+              );
             })}
             {isSending && (
               <div className="px-4 py-4 inline-flex items-center space-x-1 bg-gray-50 rounded-lg">

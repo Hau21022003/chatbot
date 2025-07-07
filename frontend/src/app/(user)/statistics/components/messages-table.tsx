@@ -1,3 +1,4 @@
+import { statisticApiRequest } from "@/api-requests/statistic";
 import {
   Table,
   TableBody,
@@ -6,57 +7,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BotMessageSquare, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
-
-const invoices = [
-  {
-    invoice: "INV001",
-    paymentStatus: "Paid",
-    totalAmount: "$250.00",
-    paymentMethod: "Credit Card",
-  },
-  {
-    invoice: "INV002",
-    paymentStatus: "Pending",
-    totalAmount: "$150.00",
-    paymentMethod: "PayPal",
-  },
-  {
-    invoice: "INV003",
-    paymentStatus: "Unpaid",
-    totalAmount: "$350.00",
-    paymentMethod: "Bank Transfer",
-  },
-  {
-    invoice: "INV004",
-    paymentStatus: "Paid",
-    totalAmount: "$450.00",
-    paymentMethod: "Credit Card Credit ",
-  },
-  {
-    invoice: "INV005",
-    paymentStatus: "Paid",
-    totalAmount: "$550.00",
-    paymentMethod: "PayPal",
-  },
-  {
-    invoice: "INV006",
-    paymentStatus: "Pending",
-    totalAmount: "$200.00",
-    paymentMethod: "Bank Transfer",
-  },
-  {
-    invoice: "INV007",
-    paymentStatus: "Unpaid",
-    totalAmount: "$300.00",
-    paymentMethod: "Credit Card",
-  },
-];
-const ITEMS_PER_PAGE = 5;
+import { handleErrorApi } from "@/lib/error";
+import { extractMonth } from "@/lib/utils";
+import { FindAllChatResType } from "@/schemas/statistic.schema";
+import {
+  BotMessageSquare,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Eye,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function MessagesTable() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [inputValue, setInputValue] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  const [messageList, setMessageList] = useState<
+    FindAllChatResType["data"]["items"]
+  >([]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 1,
+    pageSize: 10,
+  });
+  const [pageMeta, setPageMeta] = useState<
+    FindAllChatResType["data"]["pageMeta"]
+  >({
+    hasNextPage: false,
+    hasPrevPage: false,
+    pageNumber: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  const loadChat = async () => {
+    try {
+      const result = await statisticApiRequest.findAllChats({
+        search: searchValue,
+        pageNumber: pagination.pageIndex,
+      });
+      setMessageList(result.payload.data.items);
+      setPageMeta(result.payload.data.pageMeta);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi(error);
+    }
+  };
+
+  const handleSearchUpdate = () => {
+    setSearchValue(inputValue);
+    setPagination({ pageIndex: 1, pageSize: 10 });
+  };
+
+  useEffect(() => {
+    loadChat();
+  }, [pagination, searchValue]);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between gap-2 text-gray-600">
@@ -67,6 +75,14 @@ export function MessagesTable() {
         <div className="flex items-center gap-2 border-2 border-gray-300 rounded-lg px-4 py-2 w-64">
           <Search className="w-5 h-5 text-gray-700" strokeWidth={2.5} />
           <input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleSearchUpdate}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearchUpdate();
+              }
+            }}
             type="text"
             placeholder="Search"
             className="bg-transparent outline-none text-black placeholder-gray-500"
@@ -77,37 +93,42 @@ export function MessagesTable() {
         <Table className="rounded-t-lg overflow-hidden">
           <TableHeader>
             <TableRow className="bg-gray-100">
-              <TableHead className="text-gray-400 p-2">Tab</TableHead>
+              <TableHead className="text-gray-400 p-2 pl-4">Tab</TableHead>
               <TableHead className="text-gray-400 p-2">Time</TableHead>
               <TableHead className="text-gray-400 p-2">Input</TableHead>
               <TableHead className="text-gray-400 p-2">Output</TableHead>
-              <TableHead className="text-gray-400 text-right p-2">
+              <TableHead className="text-gray-400 text-right p-2 pr-4">
                 Action
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.invoice}>
-                <TableCell className="max-w-[200px] truncate py-4">
-                  {invoice.paymentStatus}
+            {messageList.map((message) => (
+              <TableRow key={message.ids[0]}>
+                <TableCell className="max-w-[50px] truncate py-4 pl-4">
+                  {message.sessionName}
+                </TableCell>
+                <TableCell className="truncate py-4">
+                  {extractMonth(new Date(message.createdAt))},{" "}
+                  {new Date(message.createdAt).getDate()},{" "}
+                  {new Date(message.createdAt).getFullYear()}{" "}
+                  {new Date(message.createdAt).getHours()}
+                  {":"}
+                  {new Date(message.createdAt).getMinutes()}
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate py-4">
-                  {invoice.paymentMethod}
+                  {message.input}
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate py-4">
-                  {invoice.paymentMethod}
+                  {message.output}
                 </TableCell>
-                <TableCell className="max-w-[200px] truncate py-4">
-                  {invoice.paymentMethod}
-                </TableCell>
-                <TableCell className="py-4">
+                <TableCell className="py-4 pr-4">
                   <div className="flex items-center justify-end gap-2">
                     <button className="p-1 bg-red-400 hover:bg-red-500 rounded-sm cursor-pointer">
                       <Trash2 className="w-5 h-5 text-white" strokeWidth={2} />
                     </button>
                     <a
-                      href="#"
+                      href={`/chat/${message.sessionId}?messageId=${message.ids[0]}`}
                       className="p-1 bg-blue-400 hover:bg-blue-500 rounded-sm cursor-pointer"
                     >
                       <Eye className="w-5 h-5 text-white" strokeWidth={2} />
@@ -120,18 +141,67 @@ export function MessagesTable() {
         </Table>
       </div>
       <div className="flex justify-end items-center gap-2">
-        <p className="mr-6">Page 1 of 7</p>
-        <button className="p-2 border border-gray-300 hover:bg-gray-50 rounded-sm">
-          <ChevronsLeft className="w-5 h-5"/>
+        <p className="mr-6">
+          Page {pagination.pageIndex} of {pageMeta.totalPages}
+        </p>
+        <button
+          disabled={pagination.pageIndex === 1}
+          onClick={() => setPagination({ pageIndex: 0, pageSize: 10 })}
+          className={`p-2 border border-gray-300 rounded-sm ${
+            pagination.pageIndex === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-50 cursor-pointer"
+          }`}
+        >
+          <ChevronsLeft className="w-5 h-5" />
         </button>
-        <button className="p-2 border border-gray-300 hover:bg-gray-50 rounded-sm">
-          <ChevronLeft className="w-5 h-5"/>
+        <button
+          disabled={pagination.pageIndex === 1}
+          onClick={() =>
+            setPagination({
+              pageIndex: Math.max(1, pagination.pageIndex - 1),
+              pageSize: 10,
+            })
+          }
+          className={`p-2 border border-gray-300 rounded-sm ${
+            pagination.pageIndex === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-50 cursor-pointer"
+          }`}
+        >
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <button className="p-2 border border-gray-300 hover:bg-gray-50 rounded-sm">
-          <ChevronRight className="w-5 h-5"/>
+        <button
+          disabled={pagination.pageIndex === pageMeta.totalPages}
+          onClick={() =>
+            setPagination({
+              pageIndex: Math.min(
+                pageMeta.totalPages,
+                pagination.pageIndex + 1
+              ),
+              pageSize: 10,
+            })
+          }
+          className={`p-2 border border-gray-300 rounded-sm ${
+            pagination.pageIndex === pageMeta.totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-50 cursor-pointer"
+          }`}
+        >
+          <ChevronRight className="w-5 h-5" />
         </button>
-        <button className="p-2 border border-gray-300 hover:bg-gray-50 rounded-sm">
-          <ChevronsRight className="w-5 h-5"/>
+        <button
+          disabled={pagination.pageIndex === pageMeta.totalPages}
+          onClick={() =>
+            setPagination({ pageIndex: pageMeta.totalPages, pageSize: 10 })
+          }
+          className={`p-2 border border-gray-300 rounded-sm ${
+            pagination.pageIndex === pageMeta.totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-50 cursor-pointer"
+          }`}
+        >
+          <ChevronsRight className="w-5 h-5" />
         </button>
       </div>
     </div>

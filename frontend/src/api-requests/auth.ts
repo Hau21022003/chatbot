@@ -1,6 +1,6 @@
 import http from '@/lib/http'
 import { LoginBodyType, LoginResType, RegisterBodyType, RegisterResType, SlideSessionResType } from '@/schemas/auth.schema';
-import { MessageResType } from '@/schemas/common.schema';
+import { BaseResType } from '@/schemas/common.schema';
 
 const authApiRequest = {
   login: (body: LoginBodyType) => http.post<LoginResType>('/auth/signin', body),
@@ -11,7 +11,7 @@ const authApiRequest = {
       baseUrl: ''
     }),
   logoutFromNextServerToServer: (sessionToken: string) =>
-    http.post<MessageResType>(
+    http.post<BaseResType>(
       '/auth/logout',
       {},
       {
@@ -24,7 +24,7 @@ const authApiRequest = {
     force?: boolean | undefined,
     signal?: AbortSignal | undefined
   ) =>
-    http.post<MessageResType>(
+    http.post<BaseResType>(
       '/api/auth/logout',
       {
         force

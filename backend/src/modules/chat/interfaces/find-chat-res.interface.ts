@@ -2,6 +2,7 @@ export interface FindChatRes {
   input: string;
   output: string;
   createdAt: Date;
-  id: string;
+  ids: string[];
   sessionName: string;
+  sessionId: string;
 }

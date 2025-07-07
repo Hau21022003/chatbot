@@ -25,6 +25,9 @@ export const PaginationBody = z
   .strict();
 
 export type PaginationBodyType = z.TypeOf<typeof PaginationBody>;
+export const createPaginationBody = <T extends z.ZodRawShape>(
+  itemSchema: z.ZodObject<T>
+) => PaginationBody.merge(itemSchema);
 
 export const createPaginationRes = <T extends z.ZodTypeAny>(itemSchema: T) =>
   BaseRes.extend({

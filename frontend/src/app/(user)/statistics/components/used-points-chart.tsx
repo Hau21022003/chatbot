@@ -1,3 +1,4 @@
+"use client";
 import { ChartNoAxesCombined } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
@@ -6,7 +7,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useStatisticContext } from "@/app/(user)/statistics/page";
+import { extractDay } from "@/lib/utils";
 
 const CustomDot = ({
   cx,
@@ -22,14 +25,14 @@ const CustomDot = ({
   );
 };
 
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
-];
+// const chartData = [
+//   { month: "January", desktop: 186, mobile: 80 },
+//   { month: "February", desktop: 305, mobile: 200 },
+//   { month: "March", desktop: 237, mobile: 120 },
+//   { month: "April", desktop: 73, mobile: 190 },
+//   { month: "May", desktop: 209, mobile: 130 },
+//   { month: "June", desktop: 214, mobile: 140 },
+// ];
 
 const chartConfig = {
   desktop: {
@@ -42,7 +45,37 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+type ChartType = {
+  desktop: number;
+  mobile: number;
+  day: string;
+};
+
 export default function UsedPointsChart() {
+  const { statisticData } = useStatisticContext();
+  const [chartData, setChartData] = useState<ChartType[]>([]);
+  useEffect(() => {
+    // const days = [
+    //   "Sunday",
+    //   "Monday",
+    //   "Tuesday",
+    //   "Wednesday",
+    //   "Thursday",
+    //   "Friday",
+    //   "Saturday",
+    // ];
+    const data =
+      statisticData?.userUsages.map((item) => {
+        const dayOfWeek = extractDay(new Date(item.date));
+        return {
+          day: dayOfWeek,
+          desktop: item.totalPointsUsed,
+          mobile: item.messageCount,
+        } as ChartType;
+      }) || [];
+
+    setChartData(data);
+  }, [statisticData]);
   return (
     <div className="h-full rounded-2xl bg-white p-5 space-y-8">
       <div className="flex items-center justify-between text-gray-600">
@@ -88,12 +121,12 @@ export default function UsedPointsChart() {
         >
           <CartesianGrid vertical={false} />
           <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
+            dataKey="day"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tickFormatter={(value) => value.slice(0, 3)}
+          />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
           <defs>
             <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
