@@ -1,3 +1,5 @@
+import { AccountSchema } from "@/schemas/account.schema";
+import { createBaseResp } from "@/schemas/common.schema";
 import z from "zod";
 
 export const RegisterBody = z
@@ -17,23 +19,31 @@ export const RegisterBody = z
 
 export type RegisterBodyType = z.TypeOf<typeof RegisterBody>;
 
-export const RegisterRes = z.object({
-  data: z.object({
-    accessToken: z.string(),
-    accessTokenExpiresAt: z.string(),
-    refreshToken: z.string(),
-    refreshTokenExpiresAt: z.string(),
-    account: z.object({
-      id: z.string(),
-      name: z.string(),
-      email: z.string(),
-      role: z.enum(["admin", "user"]),
-      userType: z.enum(["free", "enterprise"]),
-    }),
-  }),
-  message: z.string(),
-});
+// export const RegisterRes = z.object({
+//   data: z.object({
+//     accessToken: z.string(),
+//     accessTokenExpiresAt: z.string(),
+//     refreshToken: z.string(),
+//     refreshTokenExpiresAt: z.string(),
+//     account: z.object({
+//       id: z.string(),
+//       name: z.string(),
+//       email: z.string(),
+//       role: z.enum(["admin", "user"]),
+//       userType: z.enum(["free", "enterprise"]),
+//     }),
+//   }),
+//   message: z.string(),
+// });
 
+export const RegisterSchema = z.object({
+  accessToken: z.string(),
+  accessTokenExpiresAt: z.string(),
+  refreshToken: z.string(),
+  refreshTokenExpiresAt: z.string(),
+  account: AccountSchema,
+});
+export const RegisterRes = createBaseResp(RegisterSchema);
 export type RegisterResType = z.TypeOf<typeof RegisterRes>;
 
 export const LoginBody = z

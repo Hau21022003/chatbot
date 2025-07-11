@@ -21,13 +21,6 @@ import { RefreshTokenGuard } from 'src/auth/guards/refresh-token.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // @Public()
-  // @UseGuards(LocalAuthGuard)
-  // @Post('login')
-  // async login(@Request() req) {
-  //   return this.authService.login(req.user);
-  // }
-
   @Public()
   @Post('signup')
   signup(@Body() createUserDto: CreateUserDto) {

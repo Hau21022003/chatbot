@@ -59,7 +59,7 @@ export default function StatisticsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <UserHeader nameUser={user?.name} />
+      <UserHeader nameUser={user?.firstName} />
       <div className="px-8 py-6 space-y-4 bg-[#f9fbfc] flex-1 overflow-y-auto">
         <div className="flex items-stretch justify-between gap-4">
           <div className="flex flex-col gap-2 justify-center">

@@ -17,6 +17,9 @@ import {
 } from "@/schemas/settings-profile";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, X } from "lucide-react";
+import { handleErrorApi } from "@/lib/error";
+import { profileApiRequest } from "@/api-requests/profile";
+import { toast } from "sonner";
 
 // Component EditPasswordDialog
 export const EditPasswordDialog = ({
@@ -57,14 +60,26 @@ export const EditPasswordDialog = ({
   ];
 
   const handleSave = () => {
-    // Đóng dialog
-    onClose();
-    form.reset();
+    updatePassword(form.getValues());
   };
 
   const handleCancel = () => {
     form.reset();
     onClose();
+  };
+
+  const updatePassword = async (data: EditPasswordBodyType) => {
+    try {
+      await profileApiRequest.updatePassword(data);
+      toast.success("Success", {
+        description: "Password updated successfully",
+      });
+      onClose();
+      form.reset();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error, setError: form.setError });
+    }
   };
 
   return (

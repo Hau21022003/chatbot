@@ -38,3 +38,5 @@ export function extractMonth(date: Date) {
 
   return months[date.getMonth()];
 }
+
+

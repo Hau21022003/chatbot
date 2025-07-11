@@ -1,3 +1,4 @@
+import { AccountRes } from "@/schemas/account.schema";
 import { z } from "zod";
 
 export const EditPasswordBody = z
@@ -56,3 +57,22 @@ export const EditPasswordBody = z
     }
   });
 export type EditPasswordBodyType = z.TypeOf<typeof EditPasswordBody>;
+
+export const EditProfileBody = z.object({
+  firstName: z.string().min(1, {
+    message: "First name cannot be empty",
+  }),
+  lastName: z.string().min(1, {
+    message: "Last name cannot be empty",
+  }),
+});
+export type EditProfileBodyType = z.TypeOf<typeof EditProfileBody>;
+
+export const EditProfileRes = AccountRes;
+export type EditProfileResType = z.TypeOf<typeof EditProfileRes>;
+
+export const UpdateAvatarRes = AccountRes;
+export type UpdateAvatarResType = z.TypeOf<typeof UpdateAvatarRes>;
+
+export const RemoveAvatarRes = AccountRes;
+export type RemoveAvatarResType = z.TypeOf<typeof RemoveAvatarRes>;

@@ -11,6 +11,7 @@ import { IsExistConstraint } from 'src/common/validators/is-exist-constraint.val
 import { DownloadModule } from 'src/modules/download/download.module';
 import { UsageModule } from 'src/modules/usage/usage.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HelpCenterModule } from 'src/modules/help-center/help-center.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ChatModule,
     DownloadModule,
     UsageModule,
+    HelpCenterModule,
   ],
   providers: [
     {

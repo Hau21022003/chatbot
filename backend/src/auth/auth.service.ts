@@ -9,6 +9,8 @@ import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { UsersService } from 'src/modules/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { hashData } from 'src/common/utils/hash.util';
+import { User } from 'src/modules/users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -18,17 +20,17 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
+  async validateUser(email: string, pass: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) return null;
     const passwordMatches = await bcrypt.compare(pass, user.password);
     if (!passwordMatches) return null;
 
-    const { password, refreshToken, ...result } = user;
-    return result;
+    // const { password, refreshToken, ...result } = user;
+    return user;
   }
 
-  async signIn(user: any) {
+  async signIn(user: User) {
     const tokens = await this.getTokens(user.id, user.email);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
     return {
@@ -37,7 +39,7 @@ export class AuthService {
     };
   }
 
-  async signUp(createUserDto: CreateUserDto): Promise<any> {
+  async signUp(createUserDto: CreateUserDto) {
     // Check if user exists
     const userExists = await this.usersService.findByEmail(createUserDto.email);
     if (userExists) {
@@ -45,7 +47,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hash = await this.hashData(createUserDto.password);
+    const hash = await hashData(createUserDto.password);
     const newUser = await this.usersService.create({
       ...createUserDto,
       password: hash,
@@ -53,24 +55,12 @@ export class AuthService {
     const tokens = await this.getTokens(newUser.id, newUser.email);
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
     // return tokens;
-    const { password, refreshToken, ...user } = newUser;
+    // const { password, refreshToken, ...user } = newUser;
     return {
-      account: user,
+      account: newUser,
       ...tokens,
     };
   }
-
-  // async signIn(data: AuthDto) {
-  //   // Check if user exists
-  //   const user = await this.usersService.findByEmail(data.email);
-  //   if (!user) throw new BadRequestException('User does not exist');
-  //   const passwordMatches = await bcrypt.compare(data.password, user.password);
-  //   if (!passwordMatches)
-  //     throw new BadRequestException('Password is incorrect');
-  //   const tokens = await this.getTokens(user.id, user.email);
-  //   await this.updateRefreshToken(user.id, tokens.refreshToken);
-  //   return tokens;
-  // }
 
   async logout(userId: string) {
     return await this.usersService.update(userId, { refreshToken: null });
@@ -84,7 +74,6 @@ export class AuthService {
       refreshToken,
       user.refreshToken,
     );
-    console.log(refreshTokenMatches);
     if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
     const tokens = await this.getTokens(user.id, user.email);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -92,7 +81,7 @@ export class AuthService {
   }
 
   async updateRefreshToken(userId: string, refreshToken: string) {
-    const hashedRefreshToken = await this.hashData(refreshToken);
+    const hashedRefreshToken = await hashData(refreshToken);
     await this.usersService.update(userId, {
       refreshToken: hashedRefreshToken,
     });
@@ -162,10 +151,10 @@ export class AuthService {
     }
   }
 
-  async hashData(data: string): Promise<string> {
-    const saltRound = 10;
-    const salt = await bcrypt.genSalt(saltRound);
-    const hash = await bcrypt.hash(data, salt);
-    return hash;
-  }
+  // async hashData(data: string): Promise<string> {
+  //   const saltRound = 10;
+  //   const salt = await bcrypt.genSalt(saltRound);
+  //   const hash = await bcrypt.hash(data, salt);
+  //   return hash;
+  // }
 }

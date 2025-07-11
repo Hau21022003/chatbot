@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Repository } from 'typeorm';
+import { UpdatePasswordDto } from 'src/modules/users/dto/update-profile.dto';
+import { compareHash, hashData } from 'src/common/utils/hash.util';
+import { validatePasswordStrength } from 'src/common/utils/password.util';
+import { File } from 'multer';
+import * as path from 'path';
 
 @Injectable()
 export class UsersService {
@@ -28,10 +32,6 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
   async update(id: string, updateData: Partial<User>) {
     await this.usersRepository.update(id, updateData);
     return this.usersRepository.findOneOrFail({ where: { id } });
@@ -41,7 +41,44 @@ export class UsersService {
     await this.usersRepository.save(users);
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto) {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const isCurrentPasswordValid = await compareHash(
+      updatePasswordDto.currentPassword,
+      user.password,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const errors = validatePasswordStrength(updatePasswordDto.newPassword);
+    if (errors.length > 0) {
+      throw new BadRequestException(errors);
+    }
+
+    user.password = await hashData(updatePasswordDto.newPassword);
+    return this.usersRepository.save(user);
+  }
+
+  async updateProfileAvatar(userId: string, image: File) {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    user.avatar = path.basename(image.path);
+    
+    return this.usersRepository.save(user);
+  }
+
+  async removeAvatar(userId: string) {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    user.avatar = null;
+    return this.usersRepository.save(user);
   }
 }
