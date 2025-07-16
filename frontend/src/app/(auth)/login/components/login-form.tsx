@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -53,10 +52,10 @@ export function LoginForm() {
       router.push("/");
       router.refresh();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      handleErrorApi({
-        error,
-        setError: form.setError,
+    } catch {
+      toast.error("Error", {
+        description: "Username or password does not match",
+        duration: 3000,
       });
     } finally {
       setLoading(false);

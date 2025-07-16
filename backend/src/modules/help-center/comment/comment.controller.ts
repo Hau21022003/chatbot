@@ -13,6 +13,7 @@ import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage, File } from 'multer';
 import { extname } from 'path';
+import { ReactCommentDto } from 'src/modules/help-center/comment/dto/react-comment.dto';
 
 @Controller('comment')
 export class CommentController {
@@ -42,5 +43,14 @@ export class CommentController {
   @Delete(':id')
   remove(@Param('id') id: string, @GetUser('sub') userId: string) {
     return this.commentService.remove(+id, userId);
+  }
+
+  @Post('react-comment/:commentId')
+  reactComment(
+    @Param('commentId') commentId: number,
+    @GetUser('sub') userId: string,
+    @Body() dto: ReactCommentDto,
+  ) {
+    return this.commentService.reactComment(commentId, userId, dto);
   }
 }

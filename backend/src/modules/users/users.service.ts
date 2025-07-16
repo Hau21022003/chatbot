@@ -8,6 +8,7 @@ import { compareHash, hashData } from 'src/common/utils/hash.util';
 import { validatePasswordStrength } from 'src/common/utils/password.util';
 import { File } from 'multer';
 import * as path from 'path';
+import { use } from 'passport';
 
 @Injectable()
 export class UsersService {
@@ -17,7 +18,9 @@ export class UsersService {
   ) {}
 
   async findByEmail(email: string) {
-    return await this.usersRepository.findOne({ where: { email } });
+    return await this.usersRepository.findOne({
+      where: { email: email },
+    });
   }
 
   async findById(id: string) {
@@ -25,7 +28,23 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    return await this.usersRepository.save(createUserDto);
+    // return await this.usersRepository.save(createUserDto);
+    const user = this.usersRepository.create(createUserDto);
+
+    if (user.email) {
+      const [localPart] = user.email.split('@');
+      const [first, last] = localPart.split('.');
+      user.firstName = this.capitalize(first);
+      user.lastName = last ? this.capitalize(last) : '';
+      user.remainingPoints = 100;
+    }
+
+    return await this.usersRepository.save(user);
+  }
+
+  // Hàm hỗ trợ viết hoa chữ cái đầu
+  private capitalize(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   findAll() {
@@ -69,7 +88,7 @@ export class UsersService {
       throw new Error('User not found');
     }
     user.avatar = path.basename(image.path);
-    
+
     return this.usersRepository.save(user);
   }
 

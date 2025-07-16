@@ -7,6 +7,12 @@ import { Bold, ImageIcon, Italic, Smile } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "@tiptap/extension-image";
 import { toast } from "sonner";
+import {
+  CreateQuestionBody,
+  CreateQuestionBodyType,
+} from "@/schemas/help-center.shema";
+import { handleErrorApi } from "@/lib/error";
+import { helpCenterApiRequest } from "@/api-requests/help-center";
 
 export default function CreateQuestionDialog({
   isOpen,
@@ -15,13 +21,16 @@ export default function CreateQuestionDialog({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [titleValue, setTitleValue] = useState("");
+  // const [titleValue, setTitleValue] = useState("");
   const dragCounter = useRef(0);
-  const [content, setContent] = useState("");
+  // const [content, setContent] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const defaultQuestionBody = { content: "", title: "" };
+  const [createQuestionBody, setCreateQuestionBody] =
+    useState<CreateQuestionBodyType>(defaultQuestionBody);
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -85,32 +94,53 @@ export default function CreateQuestionDialog({
     ],
     // content: "<p>Bắt đầu nhập nội dung...</p>",
     onUpdate: ({ editor }) => {
-      setContent(editor.getHTML());
+      // setContent(editor.getHTML());
+      setCreateQuestionBody((prev) => ({ ...prev, content: editor.getHTML() }));
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (!isOpen) {
+      setCreateQuestionBody(defaultQuestionBody);
+      editor?.commands.setContent("");
+    }
+  }, [isOpen]);
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const selectedFiles = event.target.files;
-    if (selectedFiles) {
-      const fileArray = Array.from(selectedFiles);
-      const imageFiles = fileArray.filter((file) =>
-        file.type.startsWith("image/")
-      );
-      const file = imageFiles[0];
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Lỗi", {
-          duration: 3000,
-          description: "Image size exceeds 2MB. Please select a smaller image.",
-        });
-        return;
-      }
-      // const reader = new FileReader();
-      // reader.onload = () => {
-      //   const base64 = reader.result as string;
-      //   editor?.chain().focus().setImage({ src: base64 }).run();
-      // };
-      // reader.readAsDataURL(file);
-      
+    if (!selectedFiles) {
+      return;
+    }
+    const fileArray = Array.from(selectedFiles);
+    const imageFiles = fileArray.filter((file) =>
+      file.type.startsWith("image/")
+    );
+    const file = imageFiles[0];
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Lỗi", {
+        duration: 3000,
+        description: "Image size exceeds 2MB. Please select a smaller image.",
+      });
+      return;
+    }
+    // const reader = new FileReader();
+    // reader.onload = () => {
+    //   const base64 = reader.result as string;
+    //   editor?.chain().focus().setImage({ src: base64 }).run();
+    // };
+    // reader.readAsDataURL(file);
+    const formData = new FormData();
+    formData.set("image", file);
+    try {
+      const result = await helpCenterApiRequest.uploadImage(formData);
+      const imageUrl = result.payload.data.imageUrl;
+      editor?.chain().focus().setImage({ src: imageUrl }).run();
+      console.log("imageUrl", imageUrl);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
     }
   };
 
@@ -138,6 +168,28 @@ export default function CreateQuestionDialog({
     };
   }, [showEmojiPicker]);
 
+  const handleSave = async () => {
+    const validate = CreateQuestionBody.safeParse(createQuestionBody);
+
+    if (!validate.success) {
+      const firstError = validate.error.issues[0]?.message;
+
+      toast.error("Invalid input", {
+        description: firstError,
+      });
+      return;
+    }
+
+    try {
+      await helpCenterApiRequest.createQuestion(createQuestionBody);
+      setCreateQuestionBody({ content: "", title: "" });
+      onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -152,8 +204,14 @@ export default function CreateQuestionDialog({
           <p className="font-medium">Add a title</p>
           <input
             type="text"
-            value={titleValue}
-            onChange={(e) => setTitleValue(e.target.value)}
+            value={createQuestionBody.title}
+            // onChange={(e) => setTitleValue(e.target.value)}
+            onChange={(e) =>
+              setCreateQuestionBody((prev) => ({
+                ...prev,
+                title: e.target.value,
+              }))
+            }
             placeholder="Type something..."
             className="border p-2 rounded-md mr-2 mt-2 w-full"
           />
@@ -256,7 +314,7 @@ export default function CreateQuestionDialog({
             <span className="sr-only">Cancel</span>
           </button>
           <button
-            // onClick={handleSave}
+            onClick={handleSave}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium leading-none"
           >
             Submit

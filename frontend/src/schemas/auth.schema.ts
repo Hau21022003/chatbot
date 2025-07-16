@@ -12,29 +12,55 @@ export const RegisterBody = z
       message: "Confirm password cannot be empty",
     }),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match",
+  .superRefine((data, ctx) => {
+    const pwd = data.password;
+
+    if (pwd.length < 8) {
+      ctx.addIssue({
+        path: ["password"],
+        code: z.ZodIssueCode.custom,
+        message: "Must be at least 8 characters",
+      });
+    }
+
+    if (!/[A-Z]/.test(pwd)) {
+      ctx.addIssue({
+        path: ["password"],
+        code: z.ZodIssueCode.custom,
+        message: "Must contain at least one uppercase letter",
+      });
+    }
+
+    if (!/[0-9]/.test(pwd)) {
+      ctx.addIssue({
+        path: ["password"],
+        code: z.ZodIssueCode.custom,
+        message: "Must contain at least one number",
+      });
+    }
+
+    if (!/[^A-Za-z0-9]/.test(pwd)) {
+      ctx.addIssue({
+        path: ["password"],
+        code: z.ZodIssueCode.custom,
+        message: "Must contain at least one special character",
+      });
+    }
+
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        path: ["confirmPassword"],
+        code: z.ZodIssueCode.custom,
+        message: "Passwords do not match",
+      });
+    }
   });
+// .refine((data) => data.password === data.confirmPassword, {
+//   path: ["confirmPassword"],
+//   message: "Passwords do not match",
+// });
 
 export type RegisterBodyType = z.TypeOf<typeof RegisterBody>;
-
-// export const RegisterRes = z.object({
-//   data: z.object({
-//     accessToken: z.string(),
-//     accessTokenExpiresAt: z.string(),
-//     refreshToken: z.string(),
-//     refreshTokenExpiresAt: z.string(),
-//     account: z.object({
-//       id: z.string(),
-//       name: z.string(),
-//       email: z.string(),
-//       role: z.enum(["admin", "user"]),
-//       userType: z.enum(["free", "enterprise"]),
-//     }),
-//   }),
-//   message: z.string(),
-// });
 
 export const RegisterSchema = z.object({
   accessToken: z.string(),

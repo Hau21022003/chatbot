@@ -1,8 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
+import { helpCenterApiRequest } from "@/api-requests/help-center";
 import { showImage } from "@/components/image-viewer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { generateColor, getInitials } from "@/lib/avatar.utils";
+import { handleErrorApi } from "@/lib/error";
+import { timeAgo } from "@/lib/utils";
+import { QuestionResType } from "@/schemas/help-center.shema";
 import EmojiPicker from "emoji-picker-react";
 import {
   ArrowDownUp,
@@ -20,26 +25,39 @@ import { toast } from "sonner";
 export default function QuestionDetailDialog({
   isOpen,
   onClose,
+  questionId,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  questionId?: number;
 }) {
   const [isMostRecent, setIsMostRecent] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<File[]>([]);
-  
+
   const [showPicker, setShowPicker] = useState(false);
   const [message, setMessage] = useState("");
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const testImages = [
-    "https://github.com/shadcn.png",
-    "https://github.com/shadcn.png",
-    "https://github.com/shadcn.png",
-    "https://github.com/shadcn.png",
-    "https://github.com/shadcn.png",
-    "https://github.com/shadcn.png",
-  ];
+  const [questionDetail, setQuestionDetail] =
+    useState<QuestionResType["data"]>();
+
+  const loadQuestionDetail = async () => {
+    console.log("questionId", questionId);
+    if (!questionId) return;
+    try {
+      const result = await helpCenterApiRequest.findOneQuestion(questionId);
+      setQuestionDetail(result.payload.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi(error);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestionDetail();
+  }, [questionId]);
+
   const handleInput = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -92,6 +110,64 @@ export default function QuestionDetailDialog({
     };
   }, [showPicker]);
 
+  const reactComment = async (
+    commentId: number,
+    type: "like" | "dislike" | "none"
+  ) => {
+    try {
+      const result = await helpCenterApiRequest.reactComment(commentId, {
+        type: type,
+      });
+      const newComment = result.payload.data;
+      setQuestionDetail((prev) => {
+        return prev
+          ? {
+              ...prev,
+              comments: prev.comments?.map((comment) =>
+                comment.id === commentId ? newComment : comment
+              ),
+            }
+          : undefined;
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
+    }
+  };
+
+  const createComment = async () => {
+    if (!message.trim()) {
+      toast.error("Error", {
+        description: "Message cannot be empty",
+        duration: 3000,
+      });
+      return;
+    }
+    const formData = new FormData();
+    formData.append("content", message);
+    formData.append("questionId", questionDetail?.id.toString() || "");
+    images.forEach((img) => {
+      formData.append("images", img);
+    });
+    try {
+      const result = await helpCenterApiRequest.createComment(formData);
+      setQuestionDetail((prev) => {
+        return prev
+          ? {
+              ...prev,
+              comments: [result.payload.data, ...(prev.comments || [])],
+            }
+          : undefined;
+      });
+      setMessage("");
+      setImages([]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[80vh] flex flex-col">
@@ -102,19 +178,21 @@ export default function QuestionDetailDialog({
             msOverflowStyle: "none",
           }}
         >
-          <p className="font-medium text-xl">title</p>
-          <p>
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sequi
-            provident ipsum ad? Voluptatem tenetur, at quos nam aspernatur
-            repudiandae nisi velit quam cupiditate nulla ad aut sed, laudantium
-            eveniet facere.
-          </p>
+          <p className="font-medium text-xl">{questionDetail?.title}</p>
+          {/* <p>{questionDetail?.content}</p> */}
+          <div
+            className="prose prose-sm max-w-none
+                         [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2
+                         [&_strong]:font-bold [&_em]:italic
+                         [&_p]:my-2"
+            dangerouslySetInnerHTML={{ __html: questionDetail?.content || "" }}
+          />
           <div className="border-b border-gray-200"></div>
           <div className="flex justify-between">
             <div className="flex gap-2">
               <p className="text-xl font-medium">Comments</p>
               <div className="flex items-center justify-center py-[2px] px-3 rounded-lg text-sm bg-orange-500 text-white leading-none">
-                12
+                {questionDetail?.comments?.length || 0}
               </div>
             </div>
             <div
@@ -132,55 +210,94 @@ export default function QuestionDetailDialog({
             </div>
           </div>
           <ul className="mt-6 space-y-6">
-            <li>
-              <div className="space-y-2">
-                <div className="flex gap-3 items-center">
-                  <Avatar className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden">
-                    <AvatarImage
-                      src="https://github.com/shadcn.png"
-                      alt="@shadcn"
-                    />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <div className="flex items-end gap-3">
-                    <p className="text-lg font-medium leading-none">Name</p>
-                    <p className="leading-none text-gray-500">58 minute ago</p>
-                  </div>
-                </div>
-                <div className="pl-13">
-                  <div className="w-3/5 flex flex-wrap gap-2 mb-2">
-                    {testImages.map((image, index) => (
-                      <img
-                        key={`${index}`}
-                        src={image}
-                        alt="Image"
-                        onClick={() => {
-                          showImage(image);
-                        }}
-                        className="w-30 h-30 object-cover rounded-xl border cursor-pointer"
+            {questionDetail?.comments?.map((comment, index) => (
+              <li key={`comment_${index}`}>
+                <div className="space-y-2">
+                  <div className="flex gap-3 items-center">
+                    <Avatar
+                      className={`${
+                        comment.author?.avatar
+                          ? ""
+                          : generateColor(
+                              `${comment.author?.firstName} ${comment.author?.lastName}`
+                            )
+                      } flex items-center justify-center w-10 h-10 rounded-full overflow-hidden`}
+                    >
+                      <AvatarImage
+                        className="object-cover w-full h-full"
+                        src={comment.author?.avatar || ""}
+                        alt="@shadcn"
                       />
-                    ))}
-                  </div>
-                  <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                    Molestiae, consequuntur soluta repellendus odit illum
-                    quibusdam minima quos nam exercitationem dignissimos quasi
-                    sint itaque deleniti optio debitis omnis? Voluptate, maxime
-                    molestias?
-                  </p>
-                  <div className="flex gap-4 text-gray-600 mt-3">
-                    <div className="flex items-end gap-2">
-                      <ThumbsUp className="w-5 h-5" />
-                      <p className="leading-none">21</p>
+                      <AvatarFallback className="text-white text-lg">
+                        {getInitials(
+                          `${comment.author?.firstName} ${comment.author?.lastName}`
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center gap-3">
+                      <p className="text-lg font-medium leading-none">{`${comment.author?.firstName} ${comment.author?.lastName}`}</p>
+                      <p className="leading-none text-gray-500">
+                        {timeAgo(comment.createdAt)}
+                      </p>
                     </div>
-                    <div className="flex items-end gap-2">
-                      <ThumbsDown className="w-5 h-5" />
-                      <p className="leading-none">3</p>
+                  </div>
+                  <div className="pl-13">
+                    <div className="w-3/5 flex flex-wrap gap-2 mb-2">
+                      {comment.images?.map((image, index) => (
+                        <img
+                          key={`image_${index}`}
+                          src={image}
+                          alt="Image"
+                          onClick={() => {
+                            showImage(image);
+                          }}
+                          className="w-30 h-30 object-cover rounded-xl border cursor-pointer"
+                        />
+                      ))}
+                    </div>
+                    <p>{comment.content}</p>
+                    <div className="flex gap-4 text-gray-600 mt-3">
+                      <div
+                        className={`flex items-end gap-2 ${
+                          comment.isLikedByCurrentUser ? "text-orange-500" : ""
+                        }`}
+                      >
+                        <ThumbsUp
+                          onClick={() => {
+                            reactComment(
+                              comment.id,
+                              comment.isLikedByCurrentUser ? "none" : "like"
+                            );
+                          }}
+                          className="w-5 h-5 cursor-pointer"
+                        />
+                        <p className="leading-none">{comment.likeCount}</p>
+                      </div>
+                      <div
+                        className={`flex items-end gap-2 ${
+                          comment.isDislikedByCurrentUser
+                            ? "text-orange-500"
+                            : ""
+                        }`}
+                      >
+                        <ThumbsDown
+                          onClick={() => {
+                            reactComment(
+                              comment.id,
+                              comment.isDislikedByCurrentUser
+                                ? "none"
+                                : "dislike"
+                            );
+                          }}
+                          className="w-5 h-5 cursor-pointer"
+                        />
+                        <p className="leading-none">{comment.dislikeCount}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </li>
+              </li>
+            ))}
           </ul>
         </div>
         <div className="mt-4 bg-gray-100 rounded-2xl p-4 mx-2">
@@ -245,7 +362,7 @@ export default function QuestionDetailDialog({
                   style={{
                     position: "absolute",
                     zIndex: 1000,
-                    bottom: "30px"
+                    bottom: "30px",
                   }}
                 >
                   <EmojiPicker
@@ -255,7 +372,10 @@ export default function QuestionDetailDialog({
                 </div>
               )}
             </div>
-            <button className="p-2 rounded-lg font-medium bg-orange-500 text-white">
+            <button
+              onClick={createComment}
+              className="cursor-pointer p-2 rounded-lg font-medium bg-orange-500 text-white"
+            >
               <Send className="w-5 h-5" />
             </button>
           </div>

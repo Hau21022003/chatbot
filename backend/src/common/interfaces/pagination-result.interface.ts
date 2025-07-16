@@ -9,7 +9,17 @@ export interface PaginationMeta {
 
 export interface PaginationResult<T> {
   items: T[];
-  meta: PaginationMeta;
+  pageMeta: PaginationMeta;
+}
+
+export function createPaginationResult<T>(
+  items: T[],
+  meta: { total: number; pageNumber: number; pageSize: number },
+): PaginationResult<T> {
+  return {
+    items,
+    pageMeta: createPaginationMeta(meta.total, meta.pageNumber, meta.pageSize),
+  };
 }
 
 export function createPaginationMeta(

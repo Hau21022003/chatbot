@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { hashData } from 'src/common/utils/hash.util';
 import { User } from 'src/modules/users/entities/user.entity';
+import { validatePasswordStrength } from 'src/common/utils/password.util';
 
 @Injectable()
 export class AuthService {
@@ -44,6 +45,11 @@ export class AuthService {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
     if (userExists) {
       throw new BadRequestException('User already exists');
+    }
+
+    const errors = validatePasswordStrength(createUserDto.password);
+    if (errors.length > 0) {
+      throw new BadRequestException(errors);
     }
 
     // Hash password

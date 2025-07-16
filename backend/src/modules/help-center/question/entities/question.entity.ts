@@ -36,4 +36,7 @@ export class Question extends BaseEntity {
     cascade: true,
   })
   comments: Comment[];
+
+  @Column({ default: 0 })
+  commentCount: number;
 }

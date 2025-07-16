@@ -44,6 +44,8 @@ export class Comment extends BaseEntity {
   @OneToMany(() => CommentReaction, (reaction) => reaction.comment)
   reactions: CommentReaction[];
 
-  likeCount: number;
-  dislikeCount: number;
+  likeCount: number = 0;
+  dislikeCount: number = 0;
+  isLikedByCurrentUser: boolean = false;
+  isDislikedByCurrentUser: boolean = false;
 }

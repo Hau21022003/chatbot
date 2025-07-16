@@ -52,7 +52,7 @@ export function SignUpForm() {
       })
       setUser(result.payload.data.account)
 
-      router.push('/me')
+      router.push('/chat')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       handleErrorApi({
