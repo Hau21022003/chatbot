@@ -17,7 +17,7 @@ import { HelpCenterModule } from 'src/modules/help-center/help-center.module';
   imports: [
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
-      envFilePath: '.development.env',
+      envFilePath: '.env.development.local',
       isGlobal: true,
       load: [load],
     }),
