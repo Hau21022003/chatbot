@@ -12,6 +12,7 @@ import { DownloadModule } from 'src/modules/download/download.module';
 import { UsageModule } from 'src/modules/usage/usage.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HelpCenterModule } from 'src/modules/help-center/help-center.module';
+import { PaymentModule } from 'src/modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { HelpCenterModule } from 'src/modules/help-center/help-center.module';
     DownloadModule,
     UsageModule,
     HelpCenterModule,
+    PaymentModule,
   ],
   providers: [
     {
