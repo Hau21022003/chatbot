@@ -19,6 +19,8 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from 'src/modules/payment/entities/order.entity';
 import { Repository } from 'typeorm';
+import { UsersService } from 'src/modules/users/users.service';
+import { UserType } from 'src/modules/users/entities/user.entity';
 
 @Injectable()
 export class PaymentService {
@@ -42,6 +44,7 @@ export class PaymentService {
     private readonly configService: ConfigService,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    private readonly usersService: UsersService,
   ) {}
   async genPaymentUrl(ip: string, userId: string) {
     const tomorrow = new Date();
@@ -68,7 +71,7 @@ export class PaymentService {
         },
       );
 
-      return paymentUrl;
+      return { paymentUrl };
     } catch {
       throw new BadRequestException('Failed to create order');
     }
@@ -97,6 +100,13 @@ export class PaymentService {
 
     order.status = OrderStatus.Completed;
     await this.orderRepository.save(order);
+    const user = await this.usersService.findById(order.userId);
+
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    user.userType = UserType.ENTERPRISE;
+    user.enterpriseExpiresAt = nextMonth;
+    await this.usersService.update(user.id, user);
 
     return IpnSuccess;
   }

@@ -1,9 +1,10 @@
-import { Controller, Get, Req, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { IpnUnknownError, VerifyReturnUrl } from 'vnpay';
 import { Public } from 'src/auth/decorators/public.decorator';
+import { RawResponse } from 'src/common/decorators/raw-response.decorator';
 
 @Controller('payment')
 export class PaymentController {
@@ -25,17 +26,20 @@ export class PaymentController {
   }
 
   @Public()
+  @RawResponse()
   @Get('vnpay-ipn')
-  async handleIpn(@Query() query, @Res() res: Response) {
-    console.log('vnpay-ipn');
+  async handleIpn(@Req() req: Request) {
     try {
-      const verify: VerifyReturnUrl = this.paymentService.verifyIpn(query);
+      const verify: VerifyReturnUrl = this.paymentService.verifyIpn(req.query);
       const response = await this.paymentService.handleVnpayIpn(verify); // tách logic nghiệp vụ
-
-      return res.json(response);
-    } catch (error) {
-      console.error(error);
-      return res.json(IpnUnknownError);
+      return response;
+    } catch {
+      return IpnUnknownError;
     }
+  }
+
+  @Post('vnpay/verify')
+  async verifyVnpayReturn(@Body() body: Record<string, any>) {
+    return this.paymentService.verifyIpn(body);
   }
 }

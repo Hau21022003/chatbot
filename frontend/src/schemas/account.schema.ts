@@ -1,20 +1,6 @@
 import { createBaseResp } from "@/schemas/common.schema";
 import z from "zod";
 
-// export const AccountRes = z
-//   .object({
-//     data: z.object({
-//       id: z.string(),
-//       firstName: z.string(),
-//       lastName: z.string(),
-//       avatar: z.string().nullable(),
-//       email: z.string(),
-//       role: z.enum(["admin", "user"]),
-//       userType: z.enum(["free", "enterprise"]),
-//     }),
-//     message: z.string()
-//   })
-//   .strict()
 export const AccountSchema = z.object({
   id: z.string(),
   firstName: z.string(),

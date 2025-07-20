@@ -28,10 +28,10 @@ import { extname } from 'path';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@GetUser() user) {
-    return user;
+  getProfile(@GetUser('sub') userId: string) {
+    return this.usersService.findById(userId);
   }
 
   @Post()

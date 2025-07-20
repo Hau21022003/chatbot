@@ -40,6 +40,9 @@ export class User {
   })
   userType: UserType;
 
+  @Column({ type: 'timestamp', nullable: true })
+  enterpriseExpiresAt: Date;
+
   @Column({ nullable: true, default: 'user' })
   role: 'admin' | 'user';
 
@@ -58,10 +61,4 @@ export class User {
 
   @OneToMany(() => UserUsage, (usage) => usage.user, { cascade: true })
   usages: UserUsage[];
-
-  // @OneToMany(() => Question, (question) => question.author, { cascade: true })
-  // questions: Question[];
-
-  // @OneToMany(() => Comment, (comment) => comment.author, { cascade: true })
-  // comments: Comment[];
 }

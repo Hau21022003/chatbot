@@ -1,10 +1,24 @@
 "use client";
+import { paymentApiRequest } from "@/api-requests/payment";
 import { useAppContext } from "@/app/app-provider";
+import { handleErrorApi } from "@/lib/error";
 import { Check } from "lucide-react";
 import React from "react";
 
 export default function PricingPage() {
   const { user } = useAppContext();
+  const createPaymentUrl = async () => {
+    try {
+      const response = await paymentApiRequest.createPaymentUrl();
+      const paymentUrl = response.payload.data.paymentUrl;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi(error);
+    }
+  };
   return (
     <div className="px-8 pt-8 pb-4 h-full overflow-y-auto">
       <p className="font-medium text-2xl">Plans and Pricing</p>
@@ -57,6 +71,8 @@ export default function PricingPage() {
           </div>
           <p className="text-gray-400 mt-2">Per user/month, billed annually</p>
           <button
+            disabled={user?.userType === "enterprise"}
+            onClick={createPaymentUrl}
             className={`mt-4 border border-gray-400 rounded-lg w-full p-2 font-medium ${
               user?.userType == "enterprise"
                 ? "hover:cursor-not-allowed"

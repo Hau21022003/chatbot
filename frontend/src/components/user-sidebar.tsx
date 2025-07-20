@@ -13,6 +13,7 @@ import {
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useAppContext } from "@/app/app-provider";
 
 const SidebarItem = ({
   icon,
@@ -48,6 +49,8 @@ const SidebarItem = ({
 };
 
 const UserSidebar = () => {
+  const { user } = useAppContext();
+  const isEnterpriseUser = user?.userType == "enterprise";
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -116,7 +119,7 @@ const UserSidebar = () => {
           />
         </nav>
 
-        {!isCollapsed && (
+        {!isCollapsed && !isEnterpriseUser && (
           <div className="bg-linear-to-bl from-orange-400 to-orange-600 shadow-[inset_0_0_12px_rgba(255,115,0,0.6)] text-white rounded-2xl p-4 space-y-3">
             <Image src="/logo-white.svg" alt="Logo" width={32} height={32} />
             <div className="text-xl font-semibold mb-1">Pro Plan</div>

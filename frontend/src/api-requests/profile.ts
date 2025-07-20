@@ -1,4 +1,5 @@
 import http from "@/lib/http";
+import { AccountResType } from "@/schemas/account.schema";
 import { BaseResType } from "@/schemas/common.schema";
 import {
   EditPasswordBodyType,
@@ -9,6 +10,7 @@ import {
 } from "@/schemas/settings-profile";
 
 export const profileApiRequest = {
+  getProfile: () => http.get<AccountResType>("/users/profile"),
   updateProfile: (body: EditProfileBodyType) =>
     http.put<EditProfileResType>("/users/update-profile", body),
   updatePassword: (body: EditPasswordBodyType) =>
