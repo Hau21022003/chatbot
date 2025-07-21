@@ -1,7 +1,6 @@
 "use client";
 import { statisticApiRequest } from "@/api-requests/statistic";
 import { MessagesTable } from "@/app/(user)/statistics/components/messages-table";
-// import MessagesTable from "@/app/(user)/statistics/components/messages-table";
 import PointsChart from "@/app/(user)/statistics/components/points-chart";
 import UsedPointsChart from "@/app/(user)/statistics/components/used-points-chart";
 import { useAppContext } from "@/app/app-provider";
@@ -16,7 +15,6 @@ import UserHeader from "@/components/user-header";
 import { handleErrorApi } from "@/lib/error";
 import { StatisticResType } from "@/schemas/statistic.schema";
 import { Star, Upload } from "lucide-react";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } ;
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 export const StatisticContext = createContext<{
@@ -59,7 +57,7 @@ export default function StatisticsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <UserHeader nameUser={user?.firstName} />
+      <UserHeader user={user} />
       <div className="px-8 py-6 space-y-4 bg-[#f9fbfc] flex-1 overflow-y-auto">
         <div className="flex items-stretch justify-between gap-4">
           <div className="flex flex-col gap-2 justify-center">

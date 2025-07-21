@@ -8,12 +8,16 @@ import {
   FindAllQuestionsResType,
   QuestionResType,
   ReactCommentBodyType,
+  UpdateQuestionBodyType,
   UploadImageResType,
 } from "@/schemas/help-center.shema";
+import { number } from "zod";
 
 export const helpCenterApiRequest = {
   createQuestion: (body: CreateQuestionBodyType) =>
     http.post<CreateQuestionResType>("/question", body),
+  updateQuestion: (questionId: number, body: UpdateQuestionBodyType) =>
+    http.put(`/question/${questionId}`, body),
   findAllQuestions: (body: FindAllQuestionsBodyType) =>
     http.post<FindAllQuestionsResType>("/question/find-all", body),
   uploadImage: (body: FormData) =>

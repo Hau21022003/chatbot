@@ -2,7 +2,7 @@
 
 import authApiRequest from "@/api-requests/auth";
 import { useAppContext } from "@/app/app-provider";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 function LogoutLogic() {

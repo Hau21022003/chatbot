@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/modules/users/entities/user.entity';
+import { User, UserType } from 'src/modules/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { UpdatePasswordDto } from 'src/modules/users/dto/update-profile.dto';
 import { compareHash, hashData } from 'src/common/utils/hash.util';
@@ -9,6 +9,7 @@ import { validatePasswordStrength } from 'src/common/utils/password.util';
 import { File } from 'multer';
 import * as path from 'path';
 import { use } from 'passport';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class UsersService {
@@ -99,5 +100,31 @@ export class UsersService {
     }
     user.avatar = null;
     return this.usersRepository.save(user);
+  }
+
+  @Cron('0 0 * * *') // chạy lúc 00:00 hằng ngày
+  async resetUserType() {
+    const today = new Date();
+    try {
+      const users = await this.usersRepository.find();
+      const usersToUpdate = users.filter((user) => {
+        return (
+          user.userType === UserType.ENTERPRISE &&
+          user.enterpriseExpiresAt &&
+          new Date(user.enterpriseExpiresAt).getTime() < today.getTime()
+        );
+      });
+
+      usersToUpdate.forEach((user) => {
+        user.userType = UserType.FREE;
+      });
+
+      if (usersToUpdate.length > 0) {
+        await this.usersRepository.save(usersToUpdate);
+        console.log(`Reset ${usersToUpdate.length} user(s) về FREE`);
+      }
+    } catch (error) {
+      console.error('Lỗi khi resetUserType: ', error);
+    }
   }
 }

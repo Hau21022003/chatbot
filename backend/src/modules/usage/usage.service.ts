@@ -110,7 +110,7 @@ export class UsageService {
 
   @Cron('0 0 * * *') // chạy lúc 00:00 hằng ngày
   // @Cron('* * * * *')
-  async resetUserPoints() {
+  async resetAllUserPoints() {
     try {
       let users = await this.userService.findAll();
 
@@ -124,6 +124,22 @@ export class UsageService {
 
       await this.userService.updateMany(users);
       this.logger.debug(`Đã reset điểm cho ${users.length} người dùng`);
+    } catch (error) {
+      this.logger.error('Lỗi khi reset user points:', error);
+    }
+  }
+
+  async resetUserPoint(userId: string) {
+    try {
+      let user = await this.userService.findById(userId);
+      if (!user) throw new Error('Can not find user to reset point');
+      const config = this.POINTS_CONFIG[user.userType];
+      if (config) {
+        user.remainingPoints = config.dailyLimit;
+      }
+      await this.userService.update(userId, user);
+      
+      this.logger.debug(`Đã reset điểm cho người dùng ${userId}`);
     } catch (error) {
       this.logger.error('Lỗi khi reset user points:', error);
     }

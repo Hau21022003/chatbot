@@ -8,9 +8,11 @@ import React from "react";
 export default function QuestionItem({
   question,
   isMyPost,
+  handleOpenEditDialog,
 }: {
   question: QuestionResType["data"];
   isMyPost: boolean;
+  handleOpenEditDialog: (question: QuestionResType["data"]) => void;
 }) {
   return (
     <div className="rounded-xl bg-white py-4 px-6">
@@ -18,9 +20,9 @@ export default function QuestionItem({
         <p className="max-w-[500px] text-xl font-medium truncate">
           {question.title}
         </p>
-        <p className="font-medium text-gray-400 shrink-0">
-          {timeAgo(question.createdAt)}
-        </p>
+        <div className="shrink-0 flex gap-4 text-gray-400">
+          <p className="font-medium">{timeAgo(question.createdAt)}</p>
+        </div>
       </div>
       {/* <div className="mt-3 text-gray-500">{question.content}</div> */}
       <div className="mt-3 text-gray-500">
@@ -58,6 +60,17 @@ export default function QuestionItem({
           </Avatar>
 
           <p>{`${question.author?.firstName} ${question.author?.lastName}`}</p>
+          {isMyPost && (
+            <p
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenEditDialog(question);
+              }}
+              className="bg-gray-200 rounded-lg p-1 px-2"
+            >
+              Edit
+            </p>
+          )}
           {isMyPost && (
             <div className="py-1 px-2 bg-green-100 rounded-lg text-green-800">
               My post

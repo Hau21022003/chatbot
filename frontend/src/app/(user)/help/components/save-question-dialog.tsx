@@ -10,16 +10,21 @@ import { toast } from "sonner";
 import {
   CreateQuestionBody,
   CreateQuestionBodyType,
+  QuestionResType,
 } from "@/schemas/help-center.shema";
 import { handleErrorApi } from "@/lib/error";
 import { helpCenterApiRequest } from "@/api-requests/help-center";
 
-export default function CreateQuestionDialog({
+export default function SaveQuestionDialog({
   isOpen,
   onClose,
+  mode = "create",
+  oldQuestion,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  mode: "edit" | "create";
+  oldQuestion?: QuestionResType["data"];
 }) {
   // const [titleValue, setTitleValue] = useState("");
   const dragCounter = useRef(0);
@@ -103,6 +108,14 @@ export default function CreateQuestionDialog({
     if (!isOpen) {
       setCreateQuestionBody(defaultQuestionBody);
       editor?.commands.setContent("");
+    } else {
+      if (mode == "edit") {
+        setCreateQuestionBody({
+          title: oldQuestion?.title || "",
+          content: oldQuestion?.content || "",
+        });
+        editor?.commands.setContent(oldQuestion?.content || "");
+      }
     }
   }, [isOpen]);
 
@@ -181,7 +194,16 @@ export default function CreateQuestionDialog({
     }
 
     try {
-      await helpCenterApiRequest.createQuestion(createQuestionBody);
+      if (mode === "edit") {
+        console.log('oldQuestion', oldQuestion?.id)
+        await helpCenterApiRequest.updateQuestion(
+          oldQuestion?.id || 0,
+          createQuestionBody
+        );
+      } else {
+        await helpCenterApiRequest.createQuestion(createQuestionBody);
+      }
+      // await helpCenterApiRequest.createQuestion(createQuestionBody);
       setCreateQuestionBody({ content: "", title: "" });
       onClose();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,13 +221,14 @@ export default function CreateQuestionDialog({
           msOverflowStyle: "none",
         }}
       >
-        <p className="font-medium text-xl">Create new question</p>
+        <p className="font-medium text-xl">
+          {mode === "create" ? "Create new question" : "Edit question"}
+        </p>
         <div>
           <p className="font-medium">Add a title</p>
           <input
             type="text"
             value={createQuestionBody.title}
-            // onChange={(e) => setTitleValue(e.target.value)}
             onChange={(e) =>
               setCreateQuestionBody((prev) => ({
                 ...prev,

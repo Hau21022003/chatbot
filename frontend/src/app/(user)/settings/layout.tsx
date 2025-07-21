@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeDollarSign, BellRing, UserRoundPen } from "lucide-react";
+import { BadgeDollarSign, UserRoundPen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -29,19 +29,6 @@ export default function SettingsLayout({
           >
             <UserRoundPen className="w-5 h-5" />
             <p className="leading-none">Profile</p>
-          </Link>
-          <Link
-            href={
-              !pathname.includes("settings/notification") ? "/settings/notification" : "#"
-            }
-            className={`flex items-center gap-2 p-2 rounded-sm ${
-              pathname.includes("settings/notification")
-                ? "text-black bg-gray-100"
-                : "text-gray-400 border-white cursor-pointer hover:bg-gray-50"
-            }`}
-          >
-            <BellRing className="w-5 h-5" />
-            <p className="leading-none">Notification</p>
           </Link>
           <Link
             href={

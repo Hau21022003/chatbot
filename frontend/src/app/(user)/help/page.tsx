@@ -1,6 +1,6 @@
 "use client";
 import { helpCenterApiRequest } from "@/api-requests/help-center";
-import CreateQuestionDialog from "@/app/(user)/help/components/create-question-dialog";
+import SaveQuestionDialog from "@/app/(user)/help/components/save-question-dialog";
 import QuestionDetailDialog from "@/app/(user)/help/components/question-detail-dialog";
 import QuestionItem from "@/app/(user)/help/components/question-item";
 import { useAppContext } from "@/app/app-provider";
@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { handleErrorApi } from "@/lib/error";
 import { defaultPageMeta, PageMetaResType } from "@/schemas/common.schema";
-import { FindAllQuestionsResType } from "@/schemas/help-center.shema";
+import {
+  FindAllQuestionsResType,
+  QuestionResType,
+} from "@/schemas/help-center.shema";
 import {
   Check,
   ChevronsRight,
@@ -27,8 +30,12 @@ import React, { useEffect, useRef, useState } from "react";
 
 export default function HelpPage() {
   const { user } = useAppContext();
+  const [modeQuestionDialog, setModeQuestionDialog] = useState<
+    "create" | "edit"
+  >("create");
+  const [oldQuestion, setOldQuestion] = useState<QuestionResType["data"]>();
   const [isQuestionDetailOpen, setIsQuestionDetailOpen] = useState(false);
-  const [isCreateQuestionOpen, setIsCreateQuestionOpen] = useState(false);
+  const [isSaveQuestionOpen, setIsSaveQuestionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [shortQuestions, setShortQuestions] = useState<
     {
@@ -70,11 +77,18 @@ export default function HelpPage() {
   };
 
   const handleOpenCreateQuestion = () => {
-    setIsCreateQuestionOpen(true);
+    setIsSaveQuestionOpen(true);
   };
 
   const handleCloseCreateQuestion = () => {
-    setIsCreateQuestionOpen(false);
+    setIsSaveQuestionOpen(false);
+    setModeQuestionDialog("create");
+  };
+
+  const handleOpenEditDialog = (question: QuestionResType["data"]) => {
+    setOldQuestion(question);
+    setModeQuestionDialog("edit");
+    setIsSaveQuestionOpen(true);
   };
 
   const loadShortQuestions = async () => {
@@ -411,6 +425,7 @@ export default function HelpPage() {
               <QuestionItem
                 question={question}
                 isMyPost={question.authorId == user?.id}
+                handleOpenEditDialog={handleOpenEditDialog}
               />
             </div>
           ))}
@@ -428,9 +443,11 @@ export default function HelpPage() {
         onClose={handleCloseQuestionDetail}
         questionId={questionIdDetail}
       />
-      <CreateQuestionDialog
-        isOpen={isCreateQuestionOpen}
+      <SaveQuestionDialog
+        isOpen={isSaveQuestionOpen}
         onClose={handleCloseCreateQuestion}
+        mode={modeQuestionDialog}
+        oldQuestion={oldQuestion}
       />
     </div>
   );

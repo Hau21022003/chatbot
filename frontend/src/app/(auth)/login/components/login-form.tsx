@@ -19,7 +19,6 @@ import authApiRequest from "@/api-requests/auth";
 import { toast } from "sonner";
 import { useAppContext } from "@/app/app-provider";
 import { useRouter } from "next/navigation";
-import { handleErrorApi } from "@/lib/error";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);

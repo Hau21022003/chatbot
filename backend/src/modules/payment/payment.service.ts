@@ -21,6 +21,7 @@ import { Order, OrderStatus } from 'src/modules/payment/entities/order.entity';
 import { Repository } from 'typeorm';
 import { UsersService } from 'src/modules/users/users.service';
 import { UserType } from 'src/modules/users/entities/user.entity';
+import { UsageService } from 'src/modules/usage/usage.service';
 
 @Injectable()
 export class PaymentService {
@@ -45,6 +46,7 @@ export class PaymentService {
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     private readonly usersService: UsersService,
+    private readonly usageService: UsageService,
   ) {}
   async genPaymentUrl(ip: string, userId: string) {
     const tomorrow = new Date();
@@ -107,6 +109,7 @@ export class PaymentService {
     user.userType = UserType.ENTERPRISE;
     user.enterpriseExpiresAt = nextMonth;
     await this.usersService.update(user.id, user);
+    await this.usageService.resetUserPoint(user.id);
 
     return IpnSuccess;
   }

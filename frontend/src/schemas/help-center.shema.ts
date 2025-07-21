@@ -40,6 +40,9 @@ export const CreateQuestionBody = z.object({
 });
 export type CreateQuestionBodyType = z.infer<typeof CreateQuestionBody>;
 
+export const UpdateQuestionBody = CreateQuestionBody
+export type UpdateQuestionBodyType = z.infer<typeof UpdateQuestionBody>;
+
 export const CreateQuestionRes = createBaseResp(QuestionSchema);
 export type CreateQuestionResType = z.infer<typeof CreateQuestionRes>;
 

@@ -12,6 +12,7 @@ export const AccountSchema = z.object({
 });
 export const AccountRes = createBaseResp(AccountSchema);
 export type AccountResType = z.TypeOf<typeof AccountRes>;
+export type AccountType = z.TypeOf<typeof AccountSchema>;
 
 export const UpdateMeBody = z.object({
   name: z.string().trim().min(2).max(256),
