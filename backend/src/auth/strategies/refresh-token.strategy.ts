@@ -10,7 +10,6 @@ export class RefreshTokenStrategy extends PassportStrategy(
   'jwt-refresh',
 ) {
   constructor(private readonly config: ConfigService) {
-    console.log('OK1');
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: config.get<string>('JWT_REFRESH_SECRET'),

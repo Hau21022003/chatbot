@@ -1,10 +1,20 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { Request } from 'express';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { IpnUnknownError, VerifyReturnUrl } from 'vnpay';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { RawResponse } from 'src/common/decorators/raw-response.decorator';
+import { FindAllDto } from 'src/modules/payment/dto/find-all-dto';
+import { AdminGuard } from 'src/common/guards/admin.guard';
 
 @Controller('payment')
 export class PaymentController {
@@ -41,5 +51,23 @@ export class PaymentController {
   @Post('vnpay/verify')
   async verifyVnpayReturn(@Body() body: Record<string, any>) {
     return this.paymentService.verifyIpn(body);
+  }
+
+  @Post('find-all')
+  @UseGuards(AdminGuard)
+  findAll(@Body() findAllDto: FindAllDto) {
+    return this.paymentService.findAll(findAllDto);
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('find-by-user-id/:userId')
+  findByUserId(@Param('userId') userId: string) {
+    return this.paymentService.findByUserId(userId);
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('statistic/:year')
+  statistic(@Param('year') year: string) {
+    return this.paymentService.statistic(+year);
   }
 }

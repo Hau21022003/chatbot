@@ -9,6 +9,8 @@ export const AccountSchema = z.object({
   email: z.string(),
   role: z.enum(["admin", "user"]),
   userType: z.enum(["free", "enterprise"]),
+  isActive: z.boolean(),
+  createdAt: z.string().date(),
 });
 export const AccountRes = createBaseResp(AccountSchema);
 export type AccountResType = z.TypeOf<typeof AccountRes>;

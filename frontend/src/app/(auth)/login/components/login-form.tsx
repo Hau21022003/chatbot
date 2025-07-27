@@ -19,6 +19,7 @@ import authApiRequest from "@/api-requests/auth";
 import { toast } from "sonner";
 import { useAppContext } from "@/app/app-provider";
 import { useRouter } from "next/navigation";
+import { handleErrorApi } from "@/lib/error";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -44,22 +45,33 @@ export function LoginForm() {
         expiresAt: result.payload.data.accessTokenExpiresAt,
         role: result.payload.data.account.role,
       });
-      toast.success("Success", {
-        description: result.payload.message,
-      });
       setUser(result.payload.data.account);
       router.push("/");
       router.refresh();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch {
-      toast.error("Error", {
-        description: "Username or password does not match",
-        duration: 3000,
-      });
+    } catch (error: any) {
+      handleErrorApi({ error });
     } finally {
       setLoading(false);
     }
   }
+
+  const forgotPassword = async () => {
+    const email = form.getValues("email");
+    if (!email) {
+      toast.error("Error", { description: "Please enter your email" });
+      return;
+    }
+    try {
+      await authApiRequest.forgotPassword(email);
+      toast.success("Email sent", {
+        description: "Please check your email to reset your password",
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({ error });
+    }
+  };
 
   return (
     <Form {...form}>
@@ -83,12 +95,14 @@ export function LoginForm() {
             <FormItem>
               <div className="flex items-center">
                 <FormLabel>Password</FormLabel>
-                <a
-                  href="#"
-                  className="text-orange-500 ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                <p
+                  onClick={() => {
+                    forgotPassword();
+                  }}
+                  className="text-orange-500 cursor-pointer ml-auto inline-block text-sm underline-offset-4 hover:underline"
                 >
                   Forgot your password?
-                </a>
+                </p>
               </div>
               <FormControl>
                 <div className="relative">
@@ -122,7 +136,14 @@ export function LoginForm() {
             OR
           </span>
         </div>
-        <Button type="button" variant="outline" className="w-full">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            window.location.href = `${process.env.NEXT_PUBLIC_API_ENDPOINT}/auth/google`;
+          }}
+        >
           <Image
             src="/google-icon.png"
             alt="Google icon"

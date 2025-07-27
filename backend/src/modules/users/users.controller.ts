@@ -9,11 +9,11 @@ import {
   UseInterceptors,
   UploadedFile,
   Put,
+  Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import {
@@ -23,12 +23,21 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage, File } from 'multer';
 import { extname } from 'path';
+import { FindAllDto } from 'src/modules/users/dto/find-all.dto';
+import { AdminGuard } from 'src/common/guards/admin.guard';
+import { Response } from 'express';
+import { ExcelHelper } from 'src/common/utils/excel.helper';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // @UseGuards(JwtAuthGuard)
+  @Post('find-all')
+  @UseGuards(AdminGuard)
+  findAll(@Body() dto: FindAllDto) {
+    return this.usersService.findAllWithPagination(dto);
+  }
+
   @Get('profile')
   getProfile(@GetUser('sub') userId: string) {
     return this.usersService.findById(userId);
@@ -37,12 +46,6 @@ export class UsersController {
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
-  }
-
-  @Get()
-  @Public()
-  findAll() {
-    return this.usersService.findAll();
   }
 
   @Patch(':id')
@@ -89,5 +92,26 @@ export class UsersController {
   @Get('remove-avatar')
   async removeAvatar(@GetUser('sub') userId: string) {
     return this.usersService.removeAvatar(userId);
+  }
+
+  @Public()
+  @Get('export-users/:ids')
+  async exportUsers(@Param('ids') ids: string, @Res() res: Response) {
+    const idArray = ids.split(',');
+    const data = await this.usersService.findByIds(idArray);
+    return ExcelHelper.exportToExcel(
+      data,
+      [
+        { header: 'ID', key: 'id' },
+        { header: 'First Name', key: 'firstName' },
+        { header: 'Last Name', key: 'lastName' },
+        { header: 'Email', key: 'email' },
+        { header: 'Active', key: 'isActive' },
+        { header: 'Joined Date', key: 'createdAt' },
+        { header: 'User Type', key: 'userType' },
+      ],
+      'users.xlsx',
+      res,
+    );
   }
 }

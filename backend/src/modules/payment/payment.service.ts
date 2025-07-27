@@ -18,10 +18,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from 'src/modules/payment/entities/order.entity';
-import { Repository } from 'typeorm';
+import { Between, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { UsersService } from 'src/modules/users/users.service';
 import { UserType } from 'src/modules/users/entities/user.entity';
 import { UsageService } from 'src/modules/usage/usage.service';
+import { FindAllDto } from 'src/modules/payment/dto/find-all-dto';
+import { createPaginationResult } from 'src/common/interfaces/pagination-result.interface';
 
 @Injectable()
 export class PaymentService {
@@ -116,5 +118,90 @@ export class PaymentService {
 
   async findByTxnRef(id: string) {
     return await this.orderRepository.findOneBy({ id });
+  }
+
+  async findAll(findAllDto: FindAllDto) {
+    const { from, to, offset, pageSize, pageNumber } = findAllDto;
+
+    const where: any = {};
+
+    if (from && to) {
+      where.createdAt = Between(from, to);
+    } else if (from) {
+      where.createdAt = MoreThanOrEqual(from);
+    } else if (to) {
+      where.createdAt = LessThanOrEqual(to);
+    }
+
+    const [items, count] = await this.orderRepository.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      relations: ['user'],
+      take: pageSize,
+      skip: offset,
+    });
+
+    return createPaginationResult(items, {
+      total: count,
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+    });
+  }
+
+  async statistic(year: number) {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const invoices = await this.orderRepository.findBy({
+      createdAt: Between(start, end),
+      status: OrderStatus.Completed,
+    });
+    const total = invoices.reduce((sum, item) => sum + item.amount / 1000, 0);
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const monthlyTotals = monthNames.map((name) => ({
+      month: name,
+      total: 0,
+    }));
+
+    invoices.forEach((item) => {
+      const month = item.createdAt.getMonth();
+      monthlyTotals[month].total += item.amount / 1000;
+    });
+
+    const previousTotal = await this.getTotalRevenue(year - 1);
+    const growthRate =
+      previousTotal > 0
+        ? Math.abs(((total - previousTotal) / previousTotal) * 100)
+        : 0;
+    const growthStatus = growthRate >= 0 ? 'increase' : 'decrease';
+
+    return { total, monthlyTotals, growthRate, growthStatus };
+  }
+
+  async getTotalRevenue(year: number) {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const invoices = await this.orderRepository.findBy({
+      createdAt: Between(start, end),
+      status: OrderStatus.Completed,
+    });
+    const total = invoices.reduce((sum, item) => sum + item.amount / 1000, 0);
+    return total;
+  }
+
+  async findByUserId(userId: string) {
+    return await this.orderRepository.findBy({ userId });
   }
 }

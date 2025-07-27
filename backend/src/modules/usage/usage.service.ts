@@ -138,7 +138,7 @@ export class UsageService {
         user.remainingPoints = config.dailyLimit;
       }
       await this.userService.update(userId, user);
-      
+
       this.logger.debug(`Đã reset điểm cho người dùng ${userId}`);
     } catch (error) {
       this.logger.error('Lỗi khi reset user points:', error);

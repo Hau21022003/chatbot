@@ -43,16 +43,16 @@ export function SignUpForm() {
     if (loading) return
     setLoading(true)
     try {
-      const result = await authApiRequest.register(values)
+      await authApiRequest.register(values)
 
-      await authApiRequest.auth({
-        sessionToken: result.payload.data.accessToken,
-        expiresAt: result.payload.data.accessTokenExpiresAt,
-        role: result.payload.data.account.role
-      })
-      setUser(result.payload.data.account)
+      // await authApiRequest.auth({
+      //   sessionToken: result.payload.data.accessToken,
+      //   expiresAt: result.payload.data.accessTokenExpiresAt,
+      //   role: result.payload.data.account.role
+      // })
+      // setUser(result.payload.data.account)
 
-      router.push('/chat')
+      router.push('/login')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       handleErrorApi({

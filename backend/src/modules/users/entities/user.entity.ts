@@ -1,4 +1,5 @@
 import { Exclude, Transform } from 'class-transformer';
+import { BaseEntity } from 'src/common/entities/base.entity';
 import { getDownloadUrl } from 'src/common/utils/url.utils';
 import { ChatSession } from 'src/modules/chat/entities/chat-session.entity';
 import { Comment } from 'src/modules/help-center/comment/entities/comment.entity';
@@ -12,7 +13,7 @@ export enum UserType {
 }
 
 @Entity()
-export class User {
+export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -51,6 +52,9 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: true })
+  emailActive: boolean;
 
   @Column({ nullable: true })
   @Exclude()

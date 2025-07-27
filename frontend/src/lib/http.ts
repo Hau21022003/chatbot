@@ -1,42 +1,47 @@
-import envConfig from '@/config'
-import { EntityError, EntityErrorPayload, HttpError, HttpErrorPayload } from '@/lib/error'
-import { normalizePath } from '@/lib/format'
-import { LoginResType } from '@/schemas/auth.schema' 
-import { redirect } from 'next/navigation'
+import envConfig from "@/config";
+import {
+  EntityError,
+  EntityErrorPayload,
+  HttpError,
+  HttpErrorPayload,
+} from "@/lib/error";
+import { normalizePath } from "@/lib/format";
+import { LoginResType } from "@/schemas/auth.schema";
+import { redirect } from "next/navigation";
 
-type CustomOptions = Omit<RequestInit, 'method'> & {
-  baseUrl?: string | undefined
-}
+type CustomOptions = Omit<RequestInit, "method"> & {
+  baseUrl?: string | undefined;
+};
 
-const ENTITY_ERROR_STATUS = 422
-const AUTHENTICATION_ERROR_STATUS = 401
+const ENTITY_ERROR_STATUS = 422;
+const AUTHENTICATION_ERROR_STATUS = 401;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let clientLogoutRequest: null | Promise<any> = null
-export const isClient = () => typeof window !== 'undefined'
+let clientLogoutRequest: null | Promise<any> = null;
+export const isClient = () => typeof window !== "undefined";
 const request = async <Response>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: "GET" | "POST" | "PUT" | "DELETE",
   url: string,
   options?: CustomOptions | undefined
 ) => {
-  let body: FormData | string | undefined = undefined
+  let body: FormData | string | undefined = undefined;
   if (options?.body instanceof FormData) {
-    body = options.body
+    body = options.body;
   } else if (options?.body) {
-    body = JSON.stringify(options.body)
+    body = JSON.stringify(options.body);
   }
   const baseHeaders: {
-    [key: string]: string
+    [key: string]: string;
   } =
     body instanceof FormData
       ? {}
       : {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        };
   if (isClient()) {
-    const sessionToken = localStorage.getItem('sessionToken')
+    const sessionToken = localStorage.getItem("sessionToken");
     if (sessionToken) {
-      baseHeaders.Authorization = `Bearer ${sessionToken}`
+      baseHeaders.Authorization = `Bearer ${sessionToken}`;
     }
   }
 
@@ -46,110 +51,116 @@ const request = async <Response>(
   const baseUrl =
     options?.baseUrl === undefined
       ? envConfig.NEXT_PUBLIC_API_ENDPOINT
-      : options.baseUrl
+      : options.baseUrl;
 
-  const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`
+  const fullUrl = url.startsWith("/")
+    ? `${baseUrl}${url}`
+    : `${baseUrl}/${url}`;
 
   const res = await fetch(fullUrl, {
     ...options,
     headers: {
       ...baseHeaders,
-      ...options?.headers
+      ...options?.headers,
     } as Record<string, string>,
     body,
-    method
-  })
-  const payload: Response = await res.json()
+    method,
+  });
+  const payload: Response = await res.json();
   const data = {
     status: res.status,
-    payload
-  }
+    payload,
+  };
   // Interceptor là nời chúng ta xử lý request và response trước khi trả về cho phía component
   if (!res.ok) {
     if (res.status === ENTITY_ERROR_STATUS) {
       throw new EntityError(
         data as {
-          status: 422
-          payload: EntityErrorPayload
+          status: 422;
+          payload: EntityErrorPayload;
         }
-      )
+      );
     } else if (res.status === AUTHENTICATION_ERROR_STATUS) {
-      if (isClient() && !url.includes('auth/signin')) {
+      if (url.includes("auth/signin")) {
+        throw new HttpError(
+          data as { status: number; payload: HttpErrorPayload }
+        );
+      }
+      if (isClient() && !url.includes("auth/signin")) {
         if (!clientLogoutRequest) {
-          clientLogoutRequest = fetch('/api/auth/logout', {
-            method: 'POST',
+          clientLogoutRequest = fetch("/api/auth/logout", {
+            method: "POST",
             body: JSON.stringify({ force: true }),
             headers: {
-              ...baseHeaders
-            } as Record<string, string>
-          })
+              ...baseHeaders,
+            } as Record<string, string>,
+          });
           try {
-            await clientLogoutRequest
+            await clientLogoutRequest;
           } catch {
           } finally {
-            localStorage.removeItem('sessionToken')
-            localStorage.removeItem('sessionTokenExpiresAt')
-            clientLogoutRequest = null
-            location.href = '/login'
+            localStorage.removeItem("sessionToken");
+            localStorage.removeItem("sessionTokenExpiresAt");
+            clientLogoutRequest = null;
+            location.href = "/login";
           }
         }
       } else {
-        const sessionToken = (options?.headers as Record<string, string>)?.Authorization.split(
-          'Bearer '
-        )[1]
-        redirect(`/logout?sessionToken=${sessionToken}`)
+        const sessionToken = (
+          options?.headers as Record<string, string>
+        )?.Authorization.split("Bearer ")[1];
+        redirect(`/logout?sessionToken=${sessionToken}`);
       }
     } else {
-      throw new HttpError(data as { status: number; payload: HttpErrorPayload })
+      throw new HttpError(
+        data as { status: number; payload: HttpErrorPayload }
+      );
     }
   }
   // Đảm bảo logic dưới đây chỉ chạy ở phía client (browser)
   if (isClient()) {
-    if (
-      ['auth/signin', 'auth/signup'].some(
-        (item) => item === normalizePath(url)
-      )
-    ) {
-      const { accessToken, accessTokenExpiresAt } = (payload as LoginResType).data
-      localStorage.setItem('sessionToken', accessToken)
-      localStorage.setItem('sessionTokenExpiresAt', accessTokenExpiresAt)
-    } else if ('auth/logout' === normalizePath(url)) {
-      localStorage.removeItem('sessionToken')
-      localStorage.removeItem('sessionTokenExpiresAt')
+    if (["auth/signin"].some((item) => item === normalizePath(url))) {
+      const { accessToken, accessTokenExpiresAt } = (payload as LoginResType)
+        .data;
+      localStorage.setItem("sessionToken", accessToken);
+      localStorage.setItem("sessionTokenExpiresAt", accessTokenExpiresAt);
+    } else if ("auth/logout" === normalizePath(url)) {
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("sessionTokenExpiresAt");
     }
   }
-  return data
-}
+  return data;
+};
 
 const http = {
   get<Response>(
     url: string,
-    options?: Omit<CustomOptions, 'body'> | undefined
+    options?: Omit<CustomOptions, "body"> | undefined
   ) {
-    return request<Response>('GET', url, options)
+    return request<Response>("GET", url, options);
   },
   post<Response>(
     url: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body: any,
-    options?: Omit<CustomOptions, 'body'> | undefined
+    options?: Omit<CustomOptions, "body"> | undefined
   ) {
-    return request<Response>('POST', url, { ...options, body })
+    return request<Response>("POST", url, { ...options, body });
   },
   put<Response>(
     url: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body: any,
-    options?: Omit<CustomOptions, 'body'> | undefined
+    options?: Omit<CustomOptions, "body"> | undefined
   ) {
-    return request<Response>('PUT', url, { ...options, body })
+    return request<Response>("PUT", url, { ...options, body });
   },
   delete<Response>(
     url: string,
-    options?: Omit<CustomOptions, 'body'> | undefined
+    options?: Omit<CustomOptions, "body"> | undefined
   ) {
-    return request<Response>('DELETE', url, { ...options })
-  }
-}
+    return request<Response>("DELETE", url, { ...options });
+  },
+};
 
-export default http
+export default http;

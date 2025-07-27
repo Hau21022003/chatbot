@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserType } from 'src/modules/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { UpdatePasswordDto } from 'src/modules/users/dto/update-profile.dto';
 import { compareHash, hashData } from 'src/common/utils/hash.util';
 import { validatePasswordStrength } from 'src/common/utils/password.util';
@@ -10,6 +10,8 @@ import { File } from 'multer';
 import * as path from 'path';
 import { use } from 'passport';
 import { Cron } from '@nestjs/schedule';
+import { FindAllDto, UserStatus } from 'src/modules/users/dto/find-all.dto';
+import { createPaginationResult } from 'src/common/interfaces/pagination-result.interface';
 
 @Injectable()
 export class UsersService {
@@ -29,16 +31,20 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    // return await this.usersRepository.save(createUserDto);
     const user = this.usersRepository.create(createUserDto);
 
-    if (user.email) {
+    if (!user.firstName && user.email) {
       const [localPart] = user.email.split('@');
       const [first, last] = localPart.split('.');
       user.firstName = this.capitalize(first);
       user.lastName = last ? this.capitalize(last) : '';
-      user.remainingPoints = 100;
+    } else {
+      user.firstName = createUserDto.firstName;
+      user.lastName = createUserDto.lastName;
     }
+    user.avatar = createUserDto.avatar;
+    user.remainingPoints = 100;
+    user.emailActive = false;
 
     return await this.usersRepository.save(user);
   }
@@ -100,6 +106,51 @@ export class UsersService {
     }
     user.avatar = null;
     return this.usersRepository.save(user);
+  }
+
+  async findAllWithPagination(dto: FindAllDto) {
+    const { offset, userStatus, userType, pageNumber, pageSize, searchQuery } =
+      dto;
+
+    const queryBuilder = this.usersRepository.createQueryBuilder('user');
+
+    // Add status filter
+    if (userStatus && userStatus !== UserStatus.ALL) {
+      if (userStatus === UserStatus.ACTIVE) {
+        queryBuilder.andWhere('user.isActive = :isActive', { isActive: true });
+      }
+      if (userStatus === UserStatus.INACTIVE) {
+        queryBuilder.andWhere('user.isActive = :isActive', { isActive: false });
+      }
+    }
+
+    // Add user type filter
+    if (userType) {
+      queryBuilder.andWhere('user.userType = :userType', { userType });
+    }
+
+    // Add search query with OR condition
+    if (searchQuery) {
+      queryBuilder.andWhere(
+        '(user.firstName LIKE :searchQuery OR user.lastName LIKE :searchQuery OR user.email LIKE :searchQuery)',
+        { searchQuery: `%${searchQuery}%` },
+      );
+    }
+
+    // Add pagination
+    queryBuilder.skip(offset).take(pageSize);
+
+    const [items, count] = await queryBuilder.getManyAndCount();
+
+    return createPaginationResult(items, {
+      total: count,
+      pageNumber,
+      pageSize,
+    });
+  }
+
+  async findByIds(ids: string[]) {
+    return await this.usersRepository.find({ where: { id: In(ids) } });
   }
 
   @Cron('0 0 * * *') // chạy lúc 00:00 hằng ngày

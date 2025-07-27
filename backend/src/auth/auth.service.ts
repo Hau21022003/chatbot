@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
@@ -11,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { hashData } from 'src/common/utils/hash.util';
 import { User } from 'src/modules/users/entities/user.entity';
 import { validatePasswordStrength } from 'src/common/utils/password.util';
+import EmailUtil from 'src/common/utils/email.util';
 
 @Injectable()
 export class AuthService {
@@ -25,8 +27,17 @@ export class AuthService {
     if (!user) return null;
     const passwordMatches = await bcrypt.compare(pass, user.password);
     if (!passwordMatches) return null;
+    if (!user.emailActive) {
+      throw new BadRequestException(
+        'Account not activated. Please check your email to verify.',
+      );
+    }
+    if (!user.isActive) {
+      throw new BadRequestException(
+        'Your account is locked. Please contact support for assistance.',
+      );
+    }
 
-    // const { password, refreshToken, ...result } = user;
     return user;
   }
 
@@ -57,14 +68,53 @@ export class AuthService {
       ...createUserDto,
       password: hash,
     });
-    const tokens = await this.getTokens(newUser.id, newUser.email);
-    await this.updateRefreshToken(newUser.id, tokens.refreshToken);
+    const token = await this.generateVerificationToken(newUser.id);
+
+    // const tokens = await this.getTokens(newUser.id, newUser.email);
+    // await this.updateRefreshToken(newUser.id, tokens.refreshToken);
     // return tokens;
     // const { password, refreshToken, ...user } = newUser;
-    return {
-      account: newUser,
-      ...tokens,
-    };
+    await EmailUtil.sendMail(
+      newUser.email,
+      'verify email',
+      '',
+      `Click to verify: ${this.configService.get('CLIENT_URL')}/verify-email?token=${token}, The link will be active for 1 hour.`,
+    );
+    // return {
+    //   account: newUser,
+    //   ...tokens,
+    // };
+  }
+
+  private async generateVerificationToken(userId: string) {
+    return await this.jwtService.signAsync(
+      { userId: userId },
+      {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: '1h',
+      },
+    );
+  }
+
+  async verifyEmail(token: string) {
+    let decoded: any;
+    try {
+      decoded = await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+      });
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token has expired');
+      } else if (error.name === 'JsonWebTokenError') {
+        throw new BadRequestException('Invalid token');
+      } else {
+        throw new BadRequestException('Could not verify token');
+      }
+    }
+    const user = await this.usersService.findById(decoded.userId);
+    if (!user) throw new BadRequestException('User not found');
+    user.emailActive = true;
+    await this.usersService.update(user.id, user);
   }
 
   async logout(userId: string) {
@@ -156,10 +206,63 @@ export class AuthService {
     }
   }
 
-  // async hashData(data: string): Promise<string> {
-  //   const saltRound = 10;
-  //   const salt = await bcrypt.genSalt(saltRound);
-  //   const hash = await bcrypt.hash(data, salt);
-  //   return hash;
-  // }
+  async loginWithGoogle(user: any) {
+    let userExists = await this.usersService.findByEmail(user.email);
+    if (!userExists) {
+      userExists = await this.usersService.create({
+        email: user.email,
+        password: '',
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.picture,
+      });
+    }
+    const tokens = await this.getTokens(userExists.id, userExists.email);
+    await this.updateRefreshToken(userExists.id, tokens.refreshToken);
+    return {
+      account: userExists,
+      ...tokens,
+    };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let newPassword = this.generatePassword();
+    const hashPassword = await hashData(newPassword);
+    user.password = hashPassword;
+    await this.usersService.update(user.id, user);
+
+    await EmailUtil.sendMail(email, 'Password reset request', '', newPassword);
+    return 'Password reset successfully';
+  }
+
+  private generatePassword() {
+    const length = 10;
+
+    const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+    const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const specialChars = '!@#$%^&*()_+';
+
+    const allChars = lowerCase + upperCase + numbers + specialChars;
+
+    let password = [
+      lowerCase[Math.floor(Math.random() * lowerCase.length)],
+      upperCase[Math.floor(Math.random() * upperCase.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      specialChars[Math.floor(Math.random() * specialChars.length)],
+    ];
+
+    for (let i = password.length; i < length; i++) {
+      password.push(allChars[Math.floor(Math.random() * allChars.length)]);
+    }
+
+    password = password.sort(() => 0.5 - Math.random());
+
+    return password.join('');
+  }
 }

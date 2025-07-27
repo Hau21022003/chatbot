@@ -1,23 +1,37 @@
-import http from '@/lib/http'
-import { LoginBodyType, LoginResType, RegisterBodyType, RegisterResType, SlideSessionResType } from '@/schemas/auth.schema';
-import { BaseResType } from '@/schemas/common.schema';
+import http from "@/lib/http";
+import {
+  LoginBodyType,
+  LoginResType,
+  RegisterBodyType,
+  RegisterResType,
+  SlideSessionResType,
+} from "@/schemas/auth.schema";
+import { BaseResType } from "@/schemas/common.schema";
 
 const authApiRequest = {
-  login: (body: LoginBodyType) => http.post<LoginResType>('/auth/signin', body),
+  login: (body: LoginBodyType) => http.post<LoginResType>("/auth/signin", body),
   register: (body: RegisterBodyType) =>
-    http.post<RegisterResType>('/auth/signup', body),
-  auth: (body: { sessionToken: string; expiresAt: string, role: 'admin' | 'user' }) =>
-    http.post('/api/auth', body, {
-      baseUrl: ''
+    http.post("/auth/signup", body),
+  forgotPassword: (email: string) =>
+    http.get<BaseResType>(`/auth/forgot-password/${email}`),
+  verifyEmail: (token: string) =>
+    http.get(`/auth/verify-email/${token}`),
+  auth: (body: {
+    sessionToken: string;
+    expiresAt: string;
+    role: "admin" | "user";
+  }) =>
+    http.post("/api/auth", body, {
+      baseUrl: "",
     }),
   logoutFromNextServerToServer: (sessionToken: string) =>
     http.post<BaseResType>(
-      '/auth/logout',
+      "/auth/logout",
       {},
       {
         headers: {
-          Authorization: `Bearer ${sessionToken}`
-        }
+          Authorization: `Bearer ${sessionToken}`,
+        },
       }
     ),
   logoutFromNextClientToNextServer: (
@@ -25,31 +39,31 @@ const authApiRequest = {
     signal?: AbortSignal | undefined
   ) =>
     http.post<BaseResType>(
-      '/api/auth/logout',
+      "/api/auth/logout",
       {
-        force
+        force,
       },
       {
-        baseUrl: '',
-        signal
+        baseUrl: "",
+        signal,
       }
     ),
   slideSessionFromNextServerToServer: (sessionToken: string) =>
     http.post<SlideSessionResType>(
-      '/auth/slide-session',
+      "/auth/slide-session",
       {},
       {
         headers: {
-          Authorization: `Bearer ${sessionToken}`
-        }
+          Authorization: `Bearer ${sessionToken}`,
+        },
       }
     ),
   slideSessionFromNextClientToNextServer: () =>
     http.post<SlideSessionResType>(
-      '/api/auth/slide-session',
+      "/api/auth/slide-session",
       {},
-      { baseUrl: '' }
-    )
-}
+      { baseUrl: "" }
+    ),
+};
 
-export default authApiRequest
+export default authApiRequest;
